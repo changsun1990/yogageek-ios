@@ -11,7 +11,7 @@ import SwiftUI
 struct test_yoga_iosApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
         }
     }
 }
