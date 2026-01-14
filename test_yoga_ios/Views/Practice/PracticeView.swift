@@ -11,8 +11,8 @@ struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
     @State var viewModel: PracticeViewModel
 
-    init(sequence: YogaSequence, startAtSection: Int? = nil) {
-        _viewModel = State(initialValue: PracticeViewModel(sequence: sequence, startAtSection: startAtSection))
+    init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
+        _viewModel = State(initialValue: PracticeViewModel(sequence: sequence, poses: poses, startAtSection: startAtSection))
     }
 
     var body: some View {
@@ -86,10 +86,7 @@ struct PracticeView: View {
 
     private func poseDisplay(pose: Pose) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: pose.imageURL)
-                .font(.system(size: 80))
-                .foregroundStyle(.tint)
-                .frame(height: 120)
+            PoseImageView(imageURL: pose.imageURL, size: 120, cornerRadius: 16)
 
             VStack(spacing: 4) {
                 Text(pose.nameEnglish)
@@ -207,17 +204,20 @@ struct PracticeView: View {
 }
 
 #Preview {
-    PracticeView(sequence: YogaSequence(
-        name: "Morning Flow",
-        sections: [
-            YogaSection(name: "Warm Up", poses: [
-                PoseEntry(poseId: "mountain", duration: 10),
-                PoseEntry(poseId: "cat-cow", duration: 15)
-            ]),
-            YogaSection(name: "Standing", poses: [
-                PoseEntry(poseId: "warrior-1", duration: 30),
-                PoseEntry(poseId: "warrior-2", duration: 30)
-            ])
-        ]
-    ))
+    PracticeView(
+        sequence: YogaSequence(
+            name: "Morning Flow",
+            sections: [
+                YogaSection(name: "Warm Up", poses: [
+                    PoseEntry(poseId: "mountain", duration: 10),
+                    PoseEntry(poseId: "cat-cow", duration: 15)
+                ]),
+                YogaSection(name: "Standing", poses: [
+                    PoseEntry(poseId: "warrior-1", duration: 30),
+                    PoseEntry(poseId: "warrior-2", duration: 30)
+                ])
+            ]
+        ),
+        poses: MockPoseData.poses
+    )
 }

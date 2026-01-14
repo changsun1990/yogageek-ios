@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SectionEditorView: View {
     @Binding var section: YogaSection
+    let poses: [Pose]
     let onDelete: () -> Void
     let onAddPose: () -> Void
 
@@ -72,7 +73,7 @@ struct SectionEditorView: View {
                         ForEach($section.poses) { $poseEntry in
                             PoseEntryRowView(
                                 poseEntry: $poseEntry,
-                                pose: MockPoseData.poses.first { $0.id == poseEntry.poseId },
+                                pose: poses.first { $0.id == poseEntry.poseId },
                                 onDelete: {
                                     withAnimation {
                                         section.poses.removeAll { $0.id == poseEntry.id }
@@ -146,12 +147,14 @@ struct SectionEditorView: View {
                         PoseEntry(poseId: "cat-cow")
                     ]
                 )),
+                poses: MockPoseData.poses,
                 onDelete: {},
                 onAddPose: {}
             )
 
             SectionEditorView(
                 section: .constant(YogaSection(name: "Empty Section")),
+                poses: MockPoseData.poses,
                 onDelete: {},
                 onAddPose: {}
             )

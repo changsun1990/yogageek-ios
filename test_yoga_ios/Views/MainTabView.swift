@@ -8,16 +8,17 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @State private var poseViewModel = PoseViewModel()
     @State private var sequenceViewModel = SequenceViewModel()
 
     var body: some View {
         TabView {
             Tab("Explore", systemImage: "square.grid.2x2") {
-                ExploreView(sequenceViewModel: sequenceViewModel)
+                ExploreView(poseViewModel: poseViewModel, sequenceViewModel: sequenceViewModel)
             }
 
             Tab("Sequences", systemImage: "list.bullet.rectangle") {
-                SequenceListView(viewModel: sequenceViewModel)
+                SequenceListView(viewModel: sequenceViewModel, poses: poseViewModel.poses)
             }
         }
     }

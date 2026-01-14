@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SequenceListView: View {
     var viewModel: SequenceViewModel
+    let poses: [Pose]
     @State private var showingNewSequence = false
     @State private var sequenceToEdit: YogaSequence?
 
@@ -50,6 +51,7 @@ struct SequenceListView: View {
             .sheet(isPresented: $showingNewSequence) {
                 SequenceEditorView(
                     viewModel: viewModel,
+                    poses: poses,
                     sequence: viewModel.createNewSequence(),
                     isNew: true
                 )
@@ -57,6 +59,7 @@ struct SequenceListView: View {
             .sheet(item: $sequenceToEdit) { sequence in
                 SequenceEditorView(
                     viewModel: viewModel,
+                    poses: poses,
                     sequence: sequence,
                     isNew: false
                 )
@@ -66,5 +69,5 @@ struct SequenceListView: View {
 }
 
 #Preview {
-    SequenceListView(viewModel: SequenceViewModel())
+    SequenceListView(viewModel: SequenceViewModel(), poses: MockPoseData.poses)
 }

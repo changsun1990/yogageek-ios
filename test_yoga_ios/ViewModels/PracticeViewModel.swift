@@ -13,6 +13,7 @@ import AVFoundation
 class PracticeViewModel {
     // Practice data
     let sequence: YogaSequence
+    let poses: [Pose]
     private(set) var flattenedPoses: [(sectionName: String, poseEntry: PoseEntry, pose: Pose?)] = []
 
     // Current state
@@ -66,8 +67,9 @@ class PracticeViewModel {
         currentIndex > 0
     }
 
-    init(sequence: YogaSequence, startAtSection: Int? = nil) {
+    init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
         self.sequence = sequence
+        self.poses = poses
         flattenPoses()
         setupAudioSession()
 
@@ -97,7 +99,7 @@ class PracticeViewModel {
         flattenedPoses = []
         for section in sequence.sections {
             for poseEntry in section.poses {
-                let pose = MockPoseData.poses.first { $0.id == poseEntry.poseId }
+                let pose = poses.first { $0.id == poseEntry.poseId }
                 flattenedPoses.append((sectionName: section.name, poseEntry: poseEntry, pose: pose))
             }
         }

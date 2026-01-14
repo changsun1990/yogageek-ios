@@ -6,9 +6,15 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 @main
 struct test_yoga_iosApp: App {
+
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             MainTabView()

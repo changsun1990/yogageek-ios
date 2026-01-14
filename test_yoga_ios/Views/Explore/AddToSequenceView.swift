@@ -10,6 +10,7 @@ import SwiftUI
 struct AddToSequenceView: View {
     @Environment(\.dismiss) private var dismiss
     let pose: Pose
+    let poses: [Pose]
     var viewModel: SequenceViewModel
     var onAdded: ((String, String) -> Void)? // (sequenceName, sectionName)
 
@@ -53,6 +54,7 @@ struct AddToSequenceView: View {
             .sheet(isPresented: $showingNewSequence) {
                 SequenceEditorView(
                     viewModel: viewModel,
+                    poses: poses,
                     sequence: viewModel.createNewSequence(),
                     isNew: true
                 )
@@ -183,6 +185,7 @@ struct AddToSequenceView: View {
 #Preview {
     AddToSequenceView(
         pose: MockPoseData.poses[0],
+        poses: MockPoseData.poses,
         viewModel: SequenceViewModel()
     )
 }

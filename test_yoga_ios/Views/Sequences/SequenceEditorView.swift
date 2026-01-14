@@ -10,6 +10,7 @@ import SwiftUI
 struct SequenceEditorView: View {
     @Environment(\.dismiss) private var dismiss
     var viewModel: SequenceViewModel
+    let poses: [Pose]
 
     @State var sequence: YogaSequence
     let isNew: Bool
@@ -39,12 +40,12 @@ struct SequenceEditorView: View {
                     }
                 }
                 .sheet(isPresented: $showingPosePicker) {
-                    PosePickerView { pose in
+                    PosePickerView(poses: poses) { pose in
                         addPoseToSection(pose)
                     }
                 }
                 .fullScreenCover(isPresented: $showingPractice) {
-                    PracticeView(sequence: sequence)
+                    PracticeView(sequence: sequence, poses: poses)
                 }
         }
     }
@@ -104,6 +105,7 @@ struct SequenceEditorView: View {
             ForEach($sequence.sections) { $section in
                 SectionEditorView(
                     section: $section,
+                    poses: poses,
                     onDelete: {
                         withAnimation {
                             sequence.sections.removeAll { $0.id == section.id }
@@ -202,6 +204,7 @@ struct SummaryItem: View {
 #Preview {
     SequenceEditorView(
         viewModel: SequenceViewModel(),
+        poses: MockPoseData.poses,
         sequence: YogaSequence(
             name: "Morning Flow",
             sections: [

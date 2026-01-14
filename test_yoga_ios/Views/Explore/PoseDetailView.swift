@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PoseDetailView: View {
     let pose: Pose
+    let poses: [Pose]
     var sequenceViewModel: SequenceViewModel
 
     @State private var showingAddToSequence = false
@@ -20,13 +21,8 @@ struct PoseDetailView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Hero Image
                 VStack(spacing: 16) {
-                    Image(systemName: pose.imageURL)
-                        .font(.system(size: 100))
-                        .foregroundStyle(.tint)
+                    PoseImageView(imageURL: pose.imageURL, size: 200, cornerRadius: 16)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 200)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
 
                     VStack(spacing: 4) {
                         Text(pose.nameEnglish)
@@ -118,7 +114,7 @@ struct PoseDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingAddToSequence) {
-            AddToSequenceView(pose: pose, viewModel: sequenceViewModel) { sequenceName, sectionName in
+            AddToSequenceView(pose: pose, poses: poses, viewModel: sequenceViewModel) { sequenceName, sectionName in
                 confirmationMessage = "Added to \(sectionName) in \(sequenceName)"
                 showingConfirmation = true
             }
@@ -170,6 +166,6 @@ struct SectionHeader: View {
 
 #Preview {
     NavigationStack {
-        PoseDetailView(pose: MockPoseData.poses[0], sequenceViewModel: SequenceViewModel())
+        PoseDetailView(pose: MockPoseData.poses[0], poses: MockPoseData.poses, sequenceViewModel: SequenceViewModel())
     }
 }

@@ -12,10 +12,7 @@ struct PoseCardView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: pose.imageURL)
-                .font(.system(size: 40))
-                .foregroundStyle(.tint)
-                .frame(height: 80)
+            PoseImageView(imageURL: pose.imageURL, size: 80, cornerRadius: 8)
 
             VStack(spacing: 4) {
                 Text(pose.nameEnglish)

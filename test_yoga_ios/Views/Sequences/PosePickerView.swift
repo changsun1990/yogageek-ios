@@ -9,15 +9,16 @@ import SwiftUI
 
 struct PosePickerView: View {
     @Environment(\.dismiss) private var dismiss
+    let poses: [Pose]
     let onSelect: (Pose) -> Void
 
     @State private var searchText = ""
 
     private var filteredPoses: [Pose] {
         if searchText.isEmpty {
-            return MockPoseData.poses
+            return poses
         }
-        return MockPoseData.poses.filter { pose in
+        return poses.filter { pose in
             pose.nameEnglish.localizedCaseInsensitiveContains(searchText) ||
             pose.nameSanskrit.localizedCaseInsensitiveContains(searchText)
         }
@@ -31,12 +32,7 @@ struct PosePickerView: View {
                     dismiss()
                 } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: pose.imageURL)
-                            .font(.title2)
-                            .foregroundStyle(.tint)
-                            .frame(width: 44, height: 44)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        PoseImageView(imageURL: pose.imageURL, size: 44, cornerRadius: 8)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pose.nameEnglish)
@@ -80,7 +76,7 @@ struct PosePickerView: View {
 }
 
 #Preview {
-    PosePickerView { pose in
+    PosePickerView(poses: MockPoseData.poses) { pose in
         print("Selected: \(pose.nameEnglish)")
     }
 }

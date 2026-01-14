@@ -18,12 +18,7 @@ struct PoseEntryRowView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Main row
             HStack(spacing: 12) {
-                Image(systemName: pose?.imageURL ?? "questionmark.circle")
-                    .font(.title2)
-                    .foregroundStyle(.tint)
-                    .frame(width: 44, height: 44)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                PoseImageView(imageURL: pose?.imageURL ?? "questionmark.circle", size: 44, cornerRadius: 8)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(pose?.nameEnglish ?? "Unknown Pose")
