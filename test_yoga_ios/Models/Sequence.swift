@@ -39,7 +39,7 @@ struct YogaSection: Identifiable, Codable, Hashable {
     var poses: [PoseEntry]
 
     var duration: Int {
-        poses.reduce(0) { $0 + $1.duration }
+        poses.reduce(0) { $0 + ($1.duration ?? 0) }
     }
 
     init(id: String = UUID().uuidString, name: String = "New Section", poses: [PoseEntry] = []) {
@@ -54,9 +54,9 @@ struct PoseEntry: Identifiable, Codable, Hashable {
     let poseId: String
     var customCues: [String]
     var notes: String
-    var duration: Int // seconds
+    var duration: Int? // seconds, nil means no specific duration
 
-    init(id: String = UUID().uuidString, poseId: String, customCues: [String] = [], notes: String = "", duration: Int = 30) {
+    init(id: String = UUID().uuidString, poseId: String, customCues: [String] = [], notes: String = "", duration: Int? = nil) {
         self.id = id
         self.poseId = poseId
         self.customCues = customCues

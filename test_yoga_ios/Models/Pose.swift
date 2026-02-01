@@ -28,6 +28,7 @@ enum PoseCategory: String, Codable, CaseIterable {
     case supine = "supine"
     case hipOpener = "hip_opener"
     case allFours = "all_fours"
+    case armBalance = "arm_balance"
 
     var displayName: String {
         switch self {
@@ -39,6 +40,7 @@ enum PoseCategory: String, Codable, CaseIterable {
         case .supine: return "Supine"
         case .hipOpener: return "Hip Opener"
         case .allFours: return "All Fours"
+        case .armBalance: return "Arm Balance"
         }
     }
 }

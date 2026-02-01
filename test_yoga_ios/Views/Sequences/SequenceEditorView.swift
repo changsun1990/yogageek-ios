@@ -14,10 +14,15 @@ struct SequenceEditorView: View {
 
     @State var sequence: YogaSequence
     let isNew: Bool
+    var onSave: (() -> Void)?
 
     @State private var showingPosePicker = false
     @State private var targetSectionIndex: Int?
     @State private var showingPractice = false
+    @State private var selectedPoseForDetail: Pose?
+    @State private var sectionToShare: YogaSection?
+    @State private var showingShareSection = false
+    @State private var showingShareSequence = false
 
     var body: some View {
         NavigationStack {
@@ -32,11 +37,21 @@ struct SequenceEditorView: View {
                         }
                     }
 
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            saveSequence()
+                    ToolbarItem(placement: .primaryAction) {
+                        HStack(spacing: 16) {
+                            if sequence.totalPoseCount > 0 {
+                                Button {
+                                    showingShareSequence = true
+                                } label: {
+                                    Image(systemName: "square.and.arrow.up")
+                                }
+                            }
+
+                            Button("Save") {
+                                saveSequence()
+                            }
+                            .fontWeight(.semibold)
                         }
-                        .fontWeight(.semibold)
                     }
                 }
                 .sheet(isPresented: $showingPosePicker) {
@@ -46,6 +61,24 @@ struct SequenceEditorView: View {
                 }
                 .fullScreenCover(isPresented: $showingPractice) {
                     PracticeView(sequence: sequence, poses: poses)
+                }
+                .sheet(item: $selectedPoseForDetail) { pose in
+                    PoseDetailSheet(pose: pose) {
+                        // Just close the detail view, pose is already in section
+                        selectedPoseForDetail = nil
+                    }
+                }
+                .sheet(isPresented: $showingShareSection) {
+                    if let section = sectionToShare {
+                        ShareSectionView(section: section, poses: poses) {
+                            showingShareSection = false
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingShareSequence) {
+                    ShareSequenceView(sequence: sequence) {
+                        showingShareSequence = false
+                    }
                 }
         }
     }
@@ -102,20 +135,38 @@ struct SequenceEditorView: View {
 
     private var sectionsView: some View {
         VStack(spacing: 16) {
-            ForEach($sequence.sections) { $section in
+            ForEach(Array(sequence.sections.enumerated()), id: \.element.id) { index, section in
                 SectionEditorView(
-                    section: $section,
+                    section: Binding(
+                        get: { sequence.sections[index] },
+                        set: { sequence.sections[index] = $0 }
+                    ),
                     poses: poses,
                     onDelete: {
                         withAnimation {
-                            sequence.sections.removeAll { $0.id == section.id }
+                            _ = sequence.sections.remove(at: index)
                         }
                     },
                     onAddPose: {
-                        if let idx = sequence.sections.firstIndex(where: { $0.id == section.id }) {
-                            targetSectionIndex = idx
-                            showingPosePicker = true
+                        targetSectionIndex = index
+                        showingPosePicker = true
+                    },
+                    onPoseTap: { pose in
+                        selectedPoseForDetail = pose
+                    },
+                    onMoveUp: index > 0 ? {
+                        withAnimation {
+                            sequence.sections.swapAt(index, index - 1)
                         }
+                    } : nil,
+                    onMoveDown: index < sequence.sections.count - 1 ? {
+                        withAnimation {
+                            sequence.sections.swapAt(index, index + 1)
+                        }
+                    } : nil,
+                    onShare: {
+                        sectionToShare = sequence.sections[index]
+                        showingShareSection = true
                     }
                 )
             }
@@ -175,6 +226,7 @@ struct SequenceEditorView: View {
         } else {
             viewModel.updateSequence(sequence)
         }
+        onSave?()
         dismiss()
     }
 }

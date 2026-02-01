@@ -34,13 +34,19 @@ struct PoseEntryRowView: View {
 
                 // Duration picker
                 Menu {
+                    Button("No duration") {
+                        poseEntry.duration = nil
+                    }
+
+                    Divider()
+
                     ForEach([15, 30, 45, 60, 90, 120], id: \.self) { seconds in
                         Button("\(seconds)s") {
                             poseEntry.duration = seconds
                         }
                     }
                 } label: {
-                    Text("\(poseEntry.duration)s")
+                    Text(poseEntry.duration.map { "\($0)s" } ?? "-")
                         .font(.subheadline)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -106,7 +112,7 @@ struct PoseEntryRowView: View {
 #Preview {
     List {
         PoseEntryRowView(
-            poseEntry: .constant(PoseEntry(poseId: "mountain", duration: 30)),
+            poseEntry: .constant(PoseEntry(poseId: "mountain")),
             pose: MockPoseData.poses[0],
             onDelete: {}
         )

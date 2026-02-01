@@ -12,6 +12,8 @@ struct SequenceListView: View {
     let poses: [Pose]
     @State private var showingNewSequence = false
     @State private var sequenceToEdit: YogaSequence?
+    @State private var sequenceToShare: YogaSequence?
+    @State private var showingShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -31,14 +33,52 @@ struct SequenceListView: View {
                                 SequenceCardView(sequence: sequence)
                             }
                             .buttonStyle(.plain)
-                        }
-                        .onDelete { offsets in
-                            viewModel.deleteSequence(at: offsets)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    if let index = viewModel.sequences.firstIndex(where: { $0.id == sequence.id }) {
+                                        viewModel.deleteSequence(at: IndexSet(integer: index))
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+
+                                Button {
+                                    sequenceToShare = sequence
+                                    showingShareSheet = true
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                                .tint(.blue)
+                            }
+                            .contextMenu {
+                                Button {
+                                    sequenceToEdit = sequence
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+
+                                Button {
+                                    sequenceToShare = sequence
+                                    showingShareSheet = true
+                                } label: {
+                                    Label("Share to Community", systemImage: "square.and.arrow.up")
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive) {
+                                    if let index = viewModel.sequences.firstIndex(where: { $0.id == sequence.id }) {
+                                        viewModel.deleteSequence(at: IndexSet(integer: index))
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
             }
-            .navigationTitle("Sequences")
+            .navigationTitle("My Sequences")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -49,11 +89,9 @@ struct SequenceListView: View {
                 }
             }
             .sheet(isPresented: $showingNewSequence) {
-                SequenceEditorView(
+                NewSequenceOptionsView(
                     viewModel: viewModel,
-                    poses: poses,
-                    sequence: viewModel.createNewSequence(),
-                    isNew: true
+                    poses: poses
                 )
             }
             .sheet(item: $sequenceToEdit) { sequence in
@@ -63,6 +101,13 @@ struct SequenceListView: View {
                     sequence: sequence,
                     isNew: false
                 )
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let sequence = sequenceToShare {
+                    ShareSequenceView(sequence: sequence) {
+                        showingShareSheet = false
+                    }
+                }
             }
         }
     }

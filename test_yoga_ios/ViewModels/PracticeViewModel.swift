@@ -46,9 +46,13 @@ class PracticeViewModel {
         return flattenedPoses[currentIndex].pose
     }
 
+    private let defaultDuration = 30 // Default duration when not set
+
     var progress: Double {
-        guard let entry = currentPoseEntry, entry.duration > 0 else { return 0 }
-        return Double(entry.duration - timeRemaining) / Double(entry.duration)
+        guard let entry = currentPoseEntry else { return 0 }
+        let duration = entry.duration ?? defaultDuration
+        guard duration > 0 else { return 0 }
+        return Double(duration - timeRemaining) / Double(duration)
     }
 
     var totalPoses: Int {
@@ -82,7 +86,7 @@ class PracticeViewModel {
         }
 
         if let entry = currentPoseEntry {
-            timeRemaining = entry.duration
+            timeRemaining = entry.duration ?? defaultDuration
         }
     }
 
@@ -133,7 +137,7 @@ class PracticeViewModel {
         stopTimer()
         currentIndex += 1
         if let entry = currentPoseEntry {
-            timeRemaining = entry.duration
+            timeRemaining = entry.duration ?? defaultDuration
         }
         playChime()
         if isPlaying {
@@ -147,7 +151,7 @@ class PracticeViewModel {
         stopTimer()
         currentIndex -= 1
         if let entry = currentPoseEntry {
-            timeRemaining = entry.duration
+            timeRemaining = entry.duration ?? defaultDuration
         }
         playChime()
         if isPlaying {
@@ -161,7 +165,7 @@ class PracticeViewModel {
         currentIndex = 0
         isComplete = false
         if let entry = currentPoseEntry {
-            timeRemaining = entry.duration
+            timeRemaining = entry.duration ?? defaultDuration
         }
     }
 

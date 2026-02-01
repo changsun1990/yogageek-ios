@@ -17,8 +17,16 @@ struct MainTabView: View {
                 ExploreView(poseViewModel: poseViewModel, sequenceViewModel: sequenceViewModel)
             }
 
-            Tab("Sequences", systemImage: "list.bullet.rectangle") {
+            Tab("My Sequences", systemImage: "list.bullet.rectangle") {
                 SequenceListView(viewModel: sequenceViewModel, poses: poseViewModel.poses)
+            }
+
+            Tab("Community", systemImage: "person.3") {
+                CommunityView(sequenceViewModel: sequenceViewModel, poses: poseViewModel.poses)
+            }
+
+            Tab("Profile", systemImage: "person.circle") {
+                ProfileView()
             }
         }
     }
