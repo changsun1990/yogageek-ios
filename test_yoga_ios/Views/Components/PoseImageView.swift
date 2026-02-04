@@ -9,51 +9,57 @@ import SwiftUI
 
 struct PoseImageView: View {
     let imageURL: String
-    var size: CGFloat = 80
+    var size: CGFloat? = 80
+    var maxSize: CGFloat? = nil
     var cornerRadius: CGFloat = 12
 
     private var isWebURL: Bool {
         imageURL.hasPrefix("http://") || imageURL.hasPrefix("https://")
     }
 
+    private var effectiveSize: CGFloat { size ?? 80 }
+
     var body: some View {
-        if isWebURL {
-            AsyncImage(url: URL(string: imageURL)) { phase in
-                switch phase {
-                case .empty:
-                    ProgressView()
-                        .frame(width: size, height: size)
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: size, height: size)
-                        .clipped()
-                case .failure:
-                    fallbackImage
-                @unknown default:
-                    fallbackImage
+        Group {
+            if isWebURL {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: effectiveSize, height: effectiveSize)
+                    case .success(let image):
+                        applyImageModifiers(to: image)
+                    case .failure:
+                        symbolImage("figure.yoga", color: .secondary)
+                    @unknown default:
+                        symbolImage("figure.yoga", color: .secondary)
+                    }
                 }
+            } else {
+                symbolImage(imageURL, color: .tint)
             }
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        }
+        .background(Color(uiColor: .systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    }
+
+    @ViewBuilder
+    private func applyImageModifiers(to image: Image) -> some View {
+        let resized = image.resizable().aspectRatio(contentMode: .fit)
+        if let size = size {
+            resized.frame(width: size, height: size)
+        } else if let maxSize = maxSize {
+            resized.frame(maxWidth: maxSize, maxHeight: maxSize)
         } else {
-            // SF Symbol
-            Image(systemName: imageURL)
-                .font(.system(size: size * 0.5))
-                .foregroundStyle(.tint)
-                .frame(width: size, height: size)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            resized
         }
     }
 
-    private var fallbackImage: some View {
-        Image(systemName: "figure.yoga")
-            .font(.system(size: size * 0.5))
-            .foregroundStyle(.secondary)
-            .frame(width: size, height: size)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    private func symbolImage(_ name: String, color: some ShapeStyle) -> some View {
+        Image(systemName: name)
+            .font(.system(size: effectiveSize * 0.5))
+            .foregroundStyle(color)
+            .frame(width: effectiveSize, height: effectiveSize)
     }
 }
 

@@ -188,14 +188,26 @@ struct PoseDetailSheet: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    // Example Cues
-                    if !pose.exampleCues.isEmpty {
+                    // Benefits
+                    if !pose.benefit.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Benefits")
+                                .font(.headline)
+
+                            Text(pose.benefit)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Sample Cues
+                    if !pose.sampleCues.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Example Cues")
+                            Text("Teaching Cues")
                                 .font(.headline)
 
                             VStack(alignment: .leading, spacing: 8) {
-                                ForEach(Array(pose.exampleCues.prefix(5).enumerated()), id: \.offset) { index, cue in
+                                ForEach(Array(pose.sampleCues.prefix(5).enumerated()), id: \.offset) { index, cue in
                                     HStack(alignment: .top, spacing: 12) {
                                         Text("\(index + 1)")
                                             .font(.caption2)
@@ -206,27 +218,6 @@ struct PoseDetailSheet: View {
                                             .clipShape(Circle())
 
                                         Text(cue)
-                                            .font(.subheadline)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Benefits
-                    if !pose.benefits.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Benefits")
-                                .font(.headline)
-
-                            VStack(alignment: .leading, spacing: 6) {
-                                ForEach(pose.benefits, id: \.self) { benefit in
-                                    HStack(alignment: .top, spacing: 8) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(.green)
-                                            .font(.caption)
-
-                                        Text(benefit)
                                             .font(.subheadline)
                                     }
                                 }

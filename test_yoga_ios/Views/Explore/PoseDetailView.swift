@@ -21,7 +21,7 @@ struct PoseDetailView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Hero Image
                 VStack(spacing: 16) {
-                    PoseImageView(imageURL: pose.imageURL, size: 200, cornerRadius: 16)
+                    PoseImageView(imageURL: pose.imageURL, size: nil, maxSize: 300, cornerRadius: 16)
                         .frame(maxWidth: .infinity)
 
                     VStack(spacing: 4) {
@@ -59,56 +59,137 @@ struct PoseDetailView: View {
                 Divider()
 
                 // Description
-                VStack(alignment: .leading, spacing: 8) {
-                    SectionHeader(title: "Description", systemImage: "text.alignleft")
-
-                    Text(pose.description)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal)
-
-                // Example Cues
-                VStack(alignment: .leading, spacing: 12) {
-                    SectionHeader(title: "Example Cues", systemImage: "quote.bubble")
-
+                if !pose.description.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(Array(pose.exampleCues.enumerated()), id: \.offset) { index, cue in
-                            HStack(alignment: .top, spacing: 12) {
-                                Text("\(index + 1)")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(.white)
-                                    .frame(width: 24, height: 24)
-                                    .background(Color.accentColor)
-                                    .clipShape(Circle())
+                        SectionHeader(title: "Description", systemImage: "text.alignleft")
 
-                                Text(cue)
-                                    .font(.body)
-                            }
-                        }
+                        Text(pose.description)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
                 // Benefits
-                VStack(alignment: .leading, spacing: 12) {
-                    SectionHeader(title: "Benefits", systemImage: "heart")
-
+                if !pose.benefit.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(pose.benefits, id: \.self) { benefit in
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
+                        SectionHeader(title: "Benefits", systemImage: "heart.fill")
 
-                                Text(benefit)
-                                    .font(.body)
+                        Text(pose.benefit)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal)
+                }
+
+                // Muscle Groups
+                if !pose.muscleGroup.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        SectionHeader(title: "Muscle Groups", systemImage: "figure.strengthtraining.traditional")
+
+                        Text(pose.muscleGroup)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal)
+                }
+
+                // Mechanics
+                if !pose.mechanics.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionHeader(title: "Mechanics", systemImage: "gearshape.2")
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            if !pose.mechanics.alignmentPrinciple.isEmpty {
+                                MechanicsRow(title: "Alignment Principle", content: pose.mechanics.alignmentPrinciple, icon: "arrow.up.and.down.and.arrow.left.and.right")
+                            }
+
+                            if !pose.mechanics.keyEngagement.isEmpty {
+                                MechanicsRow(title: "Key Engagement", content: pose.mechanics.keyEngagement, icon: "figure.strengthtraining.functional")
+                            }
+
+                            if !pose.mechanics.commonCorrection.isEmpty {
+                                MechanicsRow(title: "Common Correction", content: pose.mechanics.commonCorrection, icon: "exclamationmark.triangle")
                             }
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 32)
+
+                // Sample Cues
+                if !pose.sampleCues.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionHeader(title: "Teaching Cues", systemImage: "quote.bubble")
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(pose.sampleCues.enumerated()), id: \.offset) { index, cue in
+                                HStack(alignment: .top, spacing: 12) {
+                                    Text("\(index + 1)")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(.white)
+                                        .frame(width: 24, height: 24)
+                                        .background(Color.accentColor)
+                                        .clipShape(Circle())
+
+                                    Text(cue)
+                                        .font(.body)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                // Variations
+                if !pose.variations.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionHeader(title: "Variations", systemImage: "arrow.triangle.branch")
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(pose.variations, id: \.self) { variation in
+                                if let matchingPose = findPose(named: variation) {
+                                    // Tappable variation - links to existing pose
+                                    NavigationLink(value: matchingPose) {
+                                        HStack(alignment: .center, spacing: 12) {
+                                            Image(systemName: "arrow.right.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundStyle(Color.accentColor)
+
+                                            Text(variation)
+                                                .font(.body)
+                                                .foregroundStyle(.primary)
+
+                                            Spacer()
+
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                        .padding(10)
+                                        .background(Color(.systemGray6))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    // Non-tappable variation - not in Firestore
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Image(systemName: "circle.fill")
+                                            .font(.system(size: 6))
+                                            .foregroundStyle(Color.accentColor)
+                                            .padding(.top, 6)
+
+                                        Text(variation)
+                                            .font(.body)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                Spacer().frame(height: 32)
             }
             .padding(.top)
         }
@@ -133,6 +214,16 @@ struct PoseDetailView: View {
             }
         }
         .animation(.easeInOut, value: showingConfirmation)
+    }
+
+    // Find a pose by name (case-insensitive, partial match)
+    private func findPose(named name: String) -> Pose? {
+        let lowercasedName = name.lowercased()
+        return poses.first { pose in
+            pose.nameEnglish.lowercased() == lowercasedName ||
+            pose.nameEnglish.lowercased().contains(lowercasedName) ||
+            lowercasedName.contains(pose.nameEnglish.lowercased())
+        }
     }
 
     private var confirmationBanner: some View {
@@ -161,6 +252,29 @@ struct SectionHeader: View {
     var body: some View {
         Label(title, systemImage: systemImage)
             .font(.headline)
+    }
+}
+
+struct MechanicsRow: View {
+    let title: String
+    let content: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: icon)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(.primary)
+
+            Text(content)
+                .font(.body)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 

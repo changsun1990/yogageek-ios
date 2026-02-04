@@ -67,7 +67,6 @@ class PoseViewModel {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }
-                print("Error fetching poses: \(error)")
             }
         }
     }

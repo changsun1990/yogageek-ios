@@ -12,11 +12,26 @@ struct Pose: Identifiable, Codable, Hashable {
     let nameEnglish: String
     let nameSanskrit: String
     let description: String
-    let exampleCues: [String]
-    let benefits: [String]
+    let benefit: String
+    let sampleCues: [String]
+    let mechanics: PoseMechanics
+    let muscleGroup: String
+    let variations: [String]
     let imageURL: String
     let category: PoseCategory
     let difficulty: PoseDifficulty
+}
+
+struct PoseMechanics: Codable, Hashable {
+    let alignmentPrinciple: String
+    let commonCorrection: String
+    let keyEngagement: String
+
+    static let empty = PoseMechanics(alignmentPrinciple: "", commonCorrection: "", keyEngagement: "")
+
+    var isEmpty: Bool {
+        alignmentPrinciple.isEmpty && commonCorrection.isEmpty && keyEngagement.isEmpty
+    }
 }
 
 enum PoseCategory: String, Codable, CaseIterable {

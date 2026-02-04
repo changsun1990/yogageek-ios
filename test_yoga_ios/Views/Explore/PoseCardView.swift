@@ -12,7 +12,9 @@ struct PoseCardView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            PoseImageView(imageURL: pose.imageURL, size: 80, cornerRadius: 8)
+            // Use natural image size, scaled to fit card width
+            PoseImageView(imageURL: pose.imageURL, size: nil, cornerRadius: 8)
+                .frame(maxWidth: .infinity)
 
             VStack(spacing: 4) {
                 Text(pose.nameEnglish)

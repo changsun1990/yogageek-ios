@@ -210,67 +210,112 @@ struct PoseRowView: View {
 
     @State private var isExpanded = false
 
+    private var durationText: String {
+        if let duration = poseEntry.duration {
+            let minutes = duration / 60
+            let seconds = duration % 60
+            if minutes > 0 && seconds > 0 {
+                return "\(minutes)m \(seconds)s"
+            } else if minutes > 0 {
+                return "\(minutes)m"
+            }
+            return "\(seconds)s"
+        }
+        return "No time"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Main row
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 // Tappable pose info
                 Button(action: onTap) {
                     HStack(spacing: 12) {
-                        PoseImageView(imageURL: pose?.imageURL ?? "questionmark.circle", size: 44, cornerRadius: 8)
+                        PoseImageView(imageURL: pose?.imageURL ?? "questionmark.circle", size: 50, cornerRadius: 10)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text(pose?.nameEnglish ?? "Unknown Pose")
                                 .font(.subheadline)
-                                .fontWeight(.medium)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
+                                .lineLimit(1)
 
-                            Text(pose?.nameSanskrit ?? "")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if let sanskrit = pose?.nameSanskrit, !sanskrit.isEmpty {
+                                Text(sanskrit)
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                    .italic()
+                                    .lineLimit(1)
+                            }
                         }
-
-                        Spacer()
                     }
                 }
                 .buttonStyle(.plain)
 
-                // Duration picker
+                Spacer()
+
+                // Duration badge
+                if poseEntry.duration != nil {
+                    Text(durationText)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color.accentColor.opacity(0.85))
+                        )
+                }
+
+                // Expand/collapse button for details
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    Image(systemName: isExpanded ? "minus.circle.fill" : "plus.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(isExpanded ? Color.orange : Color.accentColor)
+                        .symbolRenderingMode(.hierarchical)
+                }
+                .buttonStyle(.plain)
+
+                // Options menu
                 Menu {
-                    Button("No duration") {
-                        poseEntry.duration = nil
+                    // Duration options
+                    Menu {
+                        Button {
+                            poseEntry.duration = nil
+                        } label: {
+                            Label("No duration", systemImage: poseEntry.duration == nil ? "checkmark" : "")
+                        }
+
+                        Divider()
+
+                        ForEach([15, 30, 45, 60, 90, 120, 180, 300], id: \.self) { seconds in
+                            Button {
+                                poseEntry.duration = seconds
+                            } label: {
+                                let label = seconds < 60 ? "\(seconds) seconds" : "\(seconds / 60) minute\(seconds >= 120 ? "s" : "")"
+                                Label(label, systemImage: poseEntry.duration == seconds ? "checkmark" : "")
+                            }
+                        }
+                    } label: {
+                        Label("Set Duration", systemImage: "clock")
                     }
 
                     Divider()
 
-                    ForEach([15, 30, 45, 60, 90, 120], id: \.self) { seconds in
-                        Button("\(seconds)s") {
-                            poseEntry.duration = seconds
-                        }
-                    }
-                } label: {
-                    Text(poseEntry.duration.map { "\($0)s" } ?? "-")
-                        .font(.subheadline)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray5))
-                        .clipShape(Capsule())
-                }
-
-                // Options menu
-                Menu {
                     if let moveUp = onMoveUp {
-                        Button {
-                            moveUp()
-                        } label: {
+                        Button { moveUp() } label: {
                             Label("Move Up", systemImage: "arrow.up")
                         }
                     }
 
                     if let moveDown = onMoveDown {
-                        Button {
-                            moveDown()
-                        } label: {
+                        Button { moveDown() } label: {
                             Label("Move Down", systemImage: "arrow.down")
                         }
                     }
@@ -279,65 +324,78 @@ struct PoseRowView: View {
                         Divider()
                     }
 
-                    Button {
-                        withAnimation {
-                            isExpanded.toggle()
-                        }
-                    } label: {
-                        Label(isExpanded ? "Hide Details" : "Show Details", systemImage: isExpanded ? "chevron.up" : "info.circle")
-                    }
-
-                    Divider()
-
                     Button(role: .destructive, action: onDelete) {
-                        Label("Remove", systemImage: "trash")
+                        Label("Remove Pose", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
+                    Image(systemName: "ellipsis")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 28, height: 28)
+                        .background(Color(.systemGray5))
+                        .clipShape(Circle())
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
 
-            // Expanded content
+            // Expanded content - Details
             if isExpanded {
-                VStack(alignment: .leading, spacing: 12) {
-                    Divider()
-                        .padding(.horizontal, 12)
+                VStack(alignment: .leading, spacing: 14) {
+                    // Divider with gradient
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.clear, Color(.systemGray4), Color.clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 1)
+                        .padding(.horizontal, 14)
 
-                    // Custom cues
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Custom Cues")
+                    // Custom cues section
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Cues", systemImage: "text.bubble")
                             .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundStyle(.secondary)
 
-                        TextField("Add custom cues...", text: Binding(
+                        TextField("Add teaching cues...", text: Binding(
                             get: { poseEntry.customCues.joined(separator: ", ") },
-                            set: { poseEntry.customCues = $0.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) } }
+                            set: { poseEntry.customCues = $0.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
                         ), axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
                         .font(.subheadline)
+                        .padding(10)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 14)
 
-                    // Notes
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Notes")
+                    // Notes section
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Notes", systemImage: "note.text")
                             .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundStyle(.secondary)
 
-                        TextField("Add notes...", text: $poseEntry.notes, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
+                        TextField("Add personal notes...", text: $poseEntry.notes, axis: .vertical)
                             .font(.subheadline)
+                            .padding(10)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
                 }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity
+                ))
             }
         }
+        .background(Color(.systemBackground))
     }
 }
 
