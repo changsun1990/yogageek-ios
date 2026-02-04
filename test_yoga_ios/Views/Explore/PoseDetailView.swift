@@ -216,13 +216,25 @@ struct PoseDetailView: View {
         .animation(.easeInOut, value: showingConfirmation)
     }
 
-    // Find a pose by name (case-insensitive, partial match)
+    // Find a pose by name (case-insensitive, partial match), excluding the current pose
     private func findPose(named name: String) -> Pose? {
         let lowercasedName = name.lowercased()
-        return poses.first { pose in
-            pose.nameEnglish.lowercased() == lowercasedName ||
-            pose.nameEnglish.lowercased().contains(lowercasedName) ||
-            lowercasedName.contains(pose.nameEnglish.lowercased())
+        let currentPoseName = pose.nameEnglish.lowercased()
+
+        // If variation name matches current pose, don't link
+        if lowercasedName == currentPoseName ||
+           lowercasedName.contains(currentPoseName) ||
+           currentPoseName.contains(lowercasedName) {
+            return nil
+        }
+
+        // Find a different pose that matches
+        return poses.first { p in
+            p.id != pose.id && (
+                p.nameEnglish.lowercased() == lowercasedName ||
+                p.nameEnglish.lowercased().contains(lowercasedName) ||
+                lowercasedName.contains(p.nameEnglish.lowercased())
+            )
         }
     }
 

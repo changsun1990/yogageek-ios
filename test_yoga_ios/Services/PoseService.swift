@@ -41,10 +41,12 @@ class PoseService {
             }
 
             var imageURL = data["imageURL"] as? String ?? "figure.yoga"
-            if imageURL.hasPrefix("https://storage.googleapis.com/"),
-               let slashIndex = imageURL.dropFirst(32).firstIndex(of: "/") {
-                let bucket = String(imageURL.dropFirst(32)[..<slashIndex])
-                let path = String(imageURL.dropFirst(32)[imageURL.dropFirst(32).index(after: slashIndex)...])
+            let storagePrefix = "https://storage.googleapis.com/"
+            if imageURL.hasPrefix(storagePrefix),
+               let slashIndex = imageURL.dropFirst(storagePrefix.count).firstIndex(of: "/") {
+                let remainder = imageURL.dropFirst(storagePrefix.count)
+                let bucket = String(remainder[..<slashIndex])
+                let path = String(remainder[remainder.index(after: slashIndex)...])
                 let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)?
                     .replacingOccurrences(of: "/", with: "%2F") ?? path
                 imageURL = "https://firebasestorage.googleapis.com/v0/b/\(bucket)/o/\(encodedPath)?alt=media"
