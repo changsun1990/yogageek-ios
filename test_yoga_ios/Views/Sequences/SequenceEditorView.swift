@@ -76,7 +76,7 @@ struct SequenceEditorView: View {
                     }
                 }
                 .sheet(isPresented: $showingShareSequence) {
-                    ShareSequenceView(sequence: sequence) {
+                    ShareSequenceView(sequence: sequence) { _ in
                         showingShareSequence = false
                     }
                 }

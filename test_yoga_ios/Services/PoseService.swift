@@ -24,7 +24,7 @@ class PoseService {
             let description = data["description"] as? String ?? ""
             let benefit = data["benefit"] as? String ?? ""
             let muscleGroup = data["muscleGroup"] as? String ?? ""
-            let categoryString = data["category"] as? String ?? "standing"
+            let categories = data["category"] as? [String] ?? ["Standing"]
             let difficultyString = data["difficulty"] as? String ?? "beginner"
             let sampleCues = data["sampleCues"] as? [String] ?? []
             let variations = data["variations"] as? [String] ?? []
@@ -52,7 +52,6 @@ class PoseService {
                 imageURL = "https://firebasestorage.googleapis.com/v0/b/\(bucket)/o/\(encodedPath)?alt=media"
             }
 
-            let category = PoseCategory(rawValue: categoryString) ?? .standing
             let difficulty = PoseDifficulty(rawValue: difficultyString) ?? .beginner
 
             return Pose(
@@ -66,7 +65,7 @@ class PoseService {
                 muscleGroup: muscleGroup,
                 variations: variations,
                 imageURL: imageURL,
-                category: category,
+                categories: categories,
                 difficulty: difficulty
             )
         }
@@ -85,7 +84,7 @@ class PoseService {
             "muscleGroup": pose.muscleGroup,
             "variations": pose.variations,
             "imageURL": pose.imageURL,
-            "category": pose.category.rawValue,
+            "category": pose.categories,
             "difficulty": pose.difficulty.rawValue
         ]
 

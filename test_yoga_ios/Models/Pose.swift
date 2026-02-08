@@ -18,8 +18,12 @@ struct Pose: Identifiable, Codable, Hashable {
     let muscleGroup: String
     let variations: [String]
     let imageURL: String
-    let category: PoseCategory
+    let categories: [String]
     let difficulty: PoseDifficulty
+
+    var categoriesDisplayName: String {
+        categories.joined(separator: ", ")
+    }
 }
 
 struct PoseMechanics: Codable, Hashable {
@@ -34,38 +38,33 @@ struct PoseMechanics: Codable, Hashable {
     }
 }
 
-enum PoseCategory: String, Codable, CaseIterable {
-    case standing = "standing"
-    case seated = "seated"
-    case balance = "balance"
-    case inversion = "inversion"
-    case prone = "prone"
-    case supine = "supine"
-    case hipOpener = "hip_opener"
-    case allFours = "all_fours"
-    case armBalance = "arm_balance"
+enum PoseCategory: String, CaseIterable {
+    case armBalance = "Arm Balance"
+    case twist = "Twist"
+    case backbend = "Backbend"
+    case forwardBend = "Forward Bend"
+    case balance = "Balance"
+    case hipOpener = "Hip Opener"
+    case chest = "Chest"
+    case core = "Core"
+    case seated = "Seated"
+    case inversion = "Inversion"
+    case prone = "Prone"
+    case bind = "Bind"
+    case standing = "Standing"
+    case restorative = "Restorative"
 
     var displayName: String {
-        switch self {
-        case .standing: return "Standing"
-        case .seated: return "Seated"
-        case .balance: return "Balance"
-        case .inversion: return "Inversion"
-        case .prone: return "Prone"
-        case .supine: return "Supine"
-        case .hipOpener: return "Hip Opener"
-        case .allFours: return "All Fours"
-        case .armBalance: return "Arm Balance"
-        }
+        rawValue
     }
 }
 
 enum PoseDifficulty: String, Codable, CaseIterable {
-    case beginner = "beginner"
-    case intermediate = "intermediate"
-    case advanced = "advanced"
+    case beginner = "Beginner"
+    case intermediate = "Intermediate"
+    case advanced = "Advanced"
 
     var displayName: String {
-        rawValue.capitalized
+        rawValue
     }
 }

@@ -11,11 +11,53 @@ import SwiftUI
 @Observable
 class SequenceViewModel {
     var sequences: [YogaSequence] = []
+    var groups: [String] = []
 
     private let storageKey = "yoga_sequences"
+    private let groupsStorageKey = "yoga_groups"
+
+    var allGroups: [String] {
+        // Combine saved groups with groups from sequences
+        let sequenceGroups = Set(sequences.map { $0.group })
+        let allGroupsSet = Set(groups).union(sequenceGroups)
+        return allGroupsSet.sorted()
+    }
 
     init() {
+        loadGroups()
         loadSequences()
+    }
+
+    // MARK: - Group Management
+
+    func loadGroups() {
+        guard let data = UserDefaults.standard.data(forKey: groupsStorageKey),
+              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
+            groups = []
+            return
+        }
+        groups = decoded
+    }
+
+    func saveGroups() {
+        guard let encoded = try? JSONEncoder().encode(groups) else { return }
+        UserDefaults.standard.set(encoded, forKey: groupsStorageKey)
+    }
+
+    func addGroup(_ name: String) {
+        guard !name.isEmpty, !groups.contains(name) else { return }
+        groups.append(name)
+        saveGroups()
+    }
+
+    func deleteGroup(_ name: String) {
+        // Delete all sequences in the group
+        sequences.removeAll { $0.group == name }
+        saveSequences()
+
+        // Remove the group
+        groups.removeAll { $0 == name }
+        saveGroups()
     }
 
     func loadSequences() {
@@ -56,10 +98,11 @@ class SequenceViewModel {
         saveSequences()
     }
 
-    func createNewSequence() -> YogaSequence {
+    func createNewSequence(inGroup group: String = "My Sequences") -> YogaSequence {
         YogaSequence(
             name: "New Sequence",
-            sections: [YogaSection(name: "Warm Up")]
+            sections: [YogaSection(name: "Warm Up")],
+            group: group
         )
     }
 

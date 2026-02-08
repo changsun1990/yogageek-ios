@@ -15,6 +15,7 @@ struct PoseDetailView: View {
     @State private var showingAddToSequence = false
     @State private var showingConfirmation = false
     @State private var confirmationMessage = ""
+    @State private var showingFullscreenImage = false
 
     var body: some View {
         ScrollView {
@@ -23,6 +24,9 @@ struct PoseDetailView: View {
                 VStack(spacing: 16) {
                     PoseImageView(imageURL: pose.imageURL, size: nil, maxSize: 300, cornerRadius: 16)
                         .frame(maxWidth: .infinity)
+                        .onTapGesture {
+                            showingFullscreenImage = true
+                        }
 
                     VStack(spacing: 4) {
                         Text(pose.nameEnglish)
@@ -35,7 +39,7 @@ struct PoseDetailView: View {
                     }
 
                     HStack(spacing: 12) {
-                        Label(pose.category.displayName, systemImage: "tag")
+                        Label(pose.categoriesDisplayName, systemImage: "tag")
                         Label(pose.difficulty.displayName, systemImage: "chart.bar")
                     }
                     .font(.subheadline)
@@ -214,6 +218,9 @@ struct PoseDetailView: View {
             }
         }
         .animation(.easeInOut, value: showingConfirmation)
+        .fullScreenCover(isPresented: $showingFullscreenImage) {
+            FullscreenImageView(imageURL: pose.imageURL, poseName: pose.nameEnglish)
+        }
     }
 
     // Find a pose by name (case-insensitive, partial match), excluding the current pose
@@ -287,6 +294,117 @@ struct MechanicsRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+struct FullscreenImageView: View {
+    let imageURL: String
+    let poseName: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                ZStack {
+                    Color.black.ignoresSafeArea()
+
+                    if imageURL.hasPrefix("http://") || imageURL.hasPrefix("https://") {
+                        AsyncImage(url: URL(string: imageURL)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .tint(.white)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .scaleEffect(scale)
+                                    .offset(offset)
+                                    .gesture(
+                                        MagnificationGesture()
+                                            .onChanged { value in
+                                                scale = lastScale * value
+                                            }
+                                            .onEnded { _ in
+                                                lastScale = scale
+                                                if scale < 1.0 {
+                                                    withAnimation {
+                                                        scale = 1.0
+                                                        lastScale = 1.0
+                                                    }
+                                                }
+                                            }
+                                    )
+                                    .simultaneousGesture(
+                                        DragGesture()
+                                            .onChanged { value in
+                                                if scale > 1.0 {
+                                                    offset = CGSize(
+                                                        width: lastOffset.width + value.translation.width,
+                                                        height: lastOffset.height + value.translation.height
+                                                    )
+                                                }
+                                            }
+                                            .onEnded { _ in
+                                                lastOffset = offset
+                                            }
+                                    )
+                                    .onTapGesture(count: 2) {
+                                        withAnimation {
+                                            if scale > 1.0 {
+                                                scale = 1.0
+                                                lastScale = 1.0
+                                                offset = .zero
+                                                lastOffset = .zero
+                                            } else {
+                                                scale = 2.0
+                                                lastScale = 2.0
+                                            }
+                                        }
+                                    }
+                            case .failure:
+                                VStack(spacing: 12) {
+                                    Image(systemName: "figure.yoga")
+                                        .font(.system(size: 80))
+                                        .foregroundStyle(.gray)
+                                    Text("Unable to load image")
+                                        .foregroundStyle(.gray)
+                                }
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                    } else {
+                        Image(systemName: imageURL)
+                            .font(.system(size: 120))
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(poseName)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+        }
     }
 }
 

@@ -12,6 +12,7 @@ struct YogaSequence: Identifiable, Codable, Hashable {
     var name: String
     var description: String
     var sections: [YogaSection]
+    var group: String
     let createdAt: Date
     var updatedAt: Date
 
@@ -23,11 +24,12 @@ struct YogaSequence: Identifiable, Codable, Hashable {
         sections.reduce(0) { $0 + $1.poses.count }
     }
 
-    init(id: String = UUID().uuidString, name: String = "", description: String = "", sections: [YogaSection] = [], createdAt: Date = Date(), updatedAt: Date = Date()) {
+    init(id: String = UUID().uuidString, name: String = "", description: String = "", sections: [YogaSection] = [], group: String = "My Sequences", createdAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id
         self.name = name
         self.description = description
         self.sections = sections
+        self.group = group
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

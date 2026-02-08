@@ -24,7 +24,7 @@ struct MockPoseData {
             muscleGroup: "Legs, Core, Back",
             variations: ["Arms overhead", "Eyes closed for balance challenge"],
             imageURL: "figure.stand",
-            category: .standing,
+            categories: ["Standing"],
             difficulty: .beginner
         ),
         Pose(
@@ -42,7 +42,7 @@ struct MockPoseData {
             muscleGroup: "Shoulders, Hamstrings, Calves, Arms",
             variations: ["Three-legged dog", "Bent knee variation"],
             imageURL: "figure.cooldown",
-            category: .inversion,
+            categories: ["Inversion", "Forward Bend"],
             difficulty: .beginner
         ),
         Pose(
@@ -60,7 +60,7 @@ struct MockPoseData {
             muscleGroup: "Quadriceps, Glutes, Shoulders",
             variations: ["Humble warrior", "Crescent lunge variation"],
             imageURL: "figure.arms.open",
-            category: .standing,
+            categories: ["Standing", "Hip Opener"],
             difficulty: .beginner
         ),
         Pose(
@@ -78,7 +78,7 @@ struct MockPoseData {
             muscleGroup: "Legs, Core, Ankles",
             variations: ["Arms in prayer", "Arms overhead", "Eyes closed"],
             imageURL: "figure.yoga",
-            category: .balance,
+            categories: ["Balance", "Standing"],
             difficulty: .beginner
         )
     ]

@@ -30,7 +30,7 @@ class PoseViewModel {
         }
 
         if let category = selectedCategory {
-            result = result.filter { $0.category == category }
+            result = result.filter { $0.categories.contains(category.rawValue) }
         }
 
         if let difficulty = selectedDifficulty {

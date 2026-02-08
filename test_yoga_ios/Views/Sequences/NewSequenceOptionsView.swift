@@ -19,6 +19,7 @@ struct NewSequenceOptionsView: View {
     @Environment(\.dismiss) private var dismiss
     var viewModel: SequenceViewModel
     let poses: [Pose]
+    var groupName: String = "My Sequences"
 
     @State private var selectedOption: SequenceCreationOption?
     @State private var shouldDismissAfterSave = false
@@ -86,6 +87,7 @@ struct NewSequenceOptionsView: View {
                     GuidedSequenceBuilderView(
                         viewModel: viewModel,
                         poses: poses,
+                        groupName: groupName,
                         onSave: {
                             shouldDismissAfterSave = true
                         }
@@ -94,7 +96,7 @@ struct NewSequenceOptionsView: View {
                     SequenceEditorView(
                         viewModel: viewModel,
                         poses: poses,
-                        sequence: viewModel.createNewSequence(),
+                        sequence: viewModel.createNewSequence(inGroup: groupName),
                         isNew: true,
                         onSave: {
                             shouldDismissAfterSave = true
@@ -104,6 +106,7 @@ struct NewSequenceOptionsView: View {
                     CopyFromExistingView(
                         viewModel: viewModel,
                         poses: poses,
+                        groupName: groupName,
                         onSave: {
                             shouldDismissAfterSave = true
                         }

@@ -10,14 +10,12 @@ import SwiftUI
 struct CommunityView: View {
     var sequenceViewModel: SequenceViewModel
     let poses: [Pose]
+    @Bindable var userProfile: UserProfile
 
     @State private var communitySequences: [SharedSequence] = []
     @State private var isLoading = false
     @State private var selectedSequence: SharedSequence?
-    @State private var showingShareSheet = false
     @State private var sequenceToShare: YogaSequence?
-    @State private var likedSequenceIds: Set<String> = []
-    @State private var savedSequenceIds: Set<String> = []
     @State private var communityPosts: [CommunityPost] = CommunityPost.mockData
     @State private var showingNewPost = false
     @State private var selectedPost: CommunityPost?
@@ -50,7 +48,6 @@ struct CommunityView: View {
                                 // Show sequence picker to share
                                 if let firstSequence = sequenceViewModel.sequences.first {
                                     sequenceToShare = firstSequence
-                                    showingShareSheet = true
                                 }
                             } label: {
                                 Label("Share Sequence", systemImage: "square.and.arrow.up")
@@ -77,24 +74,28 @@ struct CommunityView: View {
                 SharedSequenceDetailView(
                     sharedSequence: binding(for: sequence),
                     poses: poses,
-                    isLiked: likedSequenceIds.contains(sequence.id),
-                    isSaved: savedSequenceIds.contains(sequence.id),
+                    isLiked: userProfile.likedSequenceIds.contains(sequence.id),
+                    isSaved: userProfile.savedSequenceIds.contains(sequence.id),
                     onLike: { toggleLike(sequence) },
                     onSave: { toggleSave(sequence) },
-                    onSaveToSequences: { savedSequence in
+                    onSaveToSequences: { savedSequence, groupName in
+                        // Add the group if it doesn't exist
+                        if !sequenceViewModel.allGroups.contains(groupName) && !groupName.isEmpty {
+                            sequenceViewModel.addGroup(groupName)
+                        }
                         sequenceViewModel.addSequence(savedSequence)
-                    }
+                    },
+                    availableGroups: sequenceViewModel.allGroups,
+                    userProfile: userProfile
                 )
             }
-            .sheet(isPresented: $showingShareSheet) {
-                if let sequence = sequenceToShare {
-                    ShareSequenceView(sequence: sequence) {
-                        // Sequence shared successfully
-                        showingShareSheet = false
-                        Task {
-                            await loadCommunitySequences()
-                        }
-                    }
+            .sheet(item: $sequenceToShare) { sequence in
+                ShareSequenceView(sequence: sequence) { sharedSequence in
+                    // Add the shared sequence to community list
+                    communitySequences.insert(sharedSequence, at: 0)
+                    // Track in user profile
+                    userProfile.sharedSequences.insert(sharedSequence, at: 0)
+                    sequenceToShare = nil
                 }
             }
             .sheet(isPresented: $showingNewPost) {
@@ -106,7 +107,8 @@ struct CommunityView: View {
             .sheet(item: $selectedPost) { post in
                 PostDetailView(
                     post: bindingForPost(post),
-                    onClose: { selectedPost = nil }
+                    onClose: { selectedPost = nil },
+                    userProfile: userProfile
                 )
             }
             .sheet(isPresented: $showingAllDiscussions) {
@@ -129,8 +131,7 @@ struct CommunityView: View {
             .sheet(isPresented: $showingAllSequences) {
                 AllSequencesView(
                     sequences: communitySequences,
-                    likedSequenceIds: $likedSequenceIds,
-                    savedSequenceIds: $savedSequenceIds,
+                    userProfile: userProfile,
                     onSelectSequence: { sequence in
                         showingAllSequences = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -168,22 +169,22 @@ struct CommunityView: View {
 
     private func toggleLike(_ sequence: SharedSequence) {
         guard let index = communitySequences.firstIndex(where: { $0.id == sequence.id }) else { return }
-        if likedSequenceIds.contains(sequence.id) {
-            likedSequenceIds.remove(sequence.id)
+        if userProfile.likedSequenceIds.contains(sequence.id) {
+            userProfile.likedSequenceIds.remove(sequence.id)
             communitySequences[index].likes -= 1
         } else {
-            likedSequenceIds.insert(sequence.id)
+            userProfile.likedSequenceIds.insert(sequence.id)
             communitySequences[index].likes += 1
         }
     }
 
     private func toggleSave(_ sequence: SharedSequence) {
         guard let index = communitySequences.firstIndex(where: { $0.id == sequence.id }) else { return }
-        if savedSequenceIds.contains(sequence.id) {
-            savedSequenceIds.remove(sequence.id)
+        if userProfile.savedSequenceIds.contains(sequence.id) {
+            userProfile.savedSequenceIds.remove(sequence.id)
             communitySequences[index].saves -= 1
         } else {
-            savedSequenceIds.insert(sequence.id)
+            userProfile.savedSequenceIds.insert(sequence.id)
             communitySequences[index].saves += 1
         }
     }
@@ -202,7 +203,6 @@ struct CommunityView: View {
                     ForEach(sequenceViewModel.sequences) { sequence in
                         ShareableSequenceCard(sequence: sequence) {
                             sequenceToShare = sequence
-                            showingShareSheet = true
                         }
                     }
                 }
@@ -311,8 +311,8 @@ struct CommunityView: View {
                     ForEach(communitySequences.prefix(5)) { sequence in
                         CommunitySequenceCard(
                             sequence: sequence,
-                            isLiked: likedSequenceIds.contains(sequence.id),
-                            isSaved: savedSequenceIds.contains(sequence.id),
+                            isLiked: userProfile.likedSequenceIds.contains(sequence.id),
+                            isSaved: userProfile.savedSequenceIds.contains(sequence.id),
                             onTap: { selectedSequence = sequence },
                             onLike: { toggleLike(sequence) },
                             onSave: { toggleSave(sequence) }
@@ -344,8 +344,19 @@ struct CommunityView: View {
         // In production, this would fetch from Firestore
         try? await Task.sleep(nanoseconds: 500_000_000)
 
-        // For now, use mock data
-        communitySequences = SharedSequence.mockData
+        // Combine user's shared sequences with mock data
+        // User's sequences appear first, then mock data
+        var allSequences = userProfile.sharedSequences
+
+        // Add mock data, avoiding duplicates
+        for mockSequence in SharedSequence.mockData {
+            if !allSequences.contains(where: { $0.id == mockSequence.id }) {
+                allSequences.append(mockSequence)
+            }
+        }
+
+        // Sort by shared date (newest first)
+        communitySequences = allSequences.sorted { $0.sharedAt > $1.sharedAt }
 
         isLoading = false
     }
@@ -353,7 +364,7 @@ struct CommunityView: View {
 
 // MARK: - Comment Model
 
-struct SequenceComment: Identifiable {
+struct SequenceComment: Identifiable, Codable {
     let id: String
     let authorId: String
     let authorName: String
@@ -484,7 +495,7 @@ struct CommunityPost: Identifiable {
 
 // MARK: - Shared Sequence Model
 
-struct SharedSequence: Identifiable {
+struct SharedSequence: Identifiable, Codable {
     let id: String
     let sequence: YogaSequence
     let authorName: String
@@ -702,7 +713,7 @@ struct CommunitySequenceCard: View {
 struct ShareSequenceView: View {
     @Environment(\.dismiss) private var dismiss
     let sequence: YogaSequence
-    let onShare: () -> Void
+    let onShare: (SharedSequence) -> Void
 
     @State private var isSharing = false
     @State private var shareDescription = ""
@@ -770,8 +781,25 @@ struct ShareSequenceView: View {
 
         // Simulate sharing to server
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // Create shared sequence with description
+            var sharedSequence = sequence
+            if !shareDescription.isEmpty {
+                sharedSequence.description = shareDescription
+            }
+
+            let newSharedSequence = SharedSequence(
+                id: UUID().uuidString,
+                sequence: sharedSequence,
+                authorName: "You",
+                authorId: "current-user",
+                sharedAt: Date(),
+                likes: 0,
+                saves: 0,
+                comments: []
+            )
+
             isSharing = false
-            onShare()
+            onShare(newSharedSequence)
         }
     }
 }
@@ -909,9 +937,13 @@ struct SharedSequenceDetailView: View {
     let isSaved: Bool
     let onLike: () -> Void
     let onSave: () -> Void
-    let onSaveToSequences: (YogaSequence) -> Void
+    let onSaveToSequences: (YogaSequence, String) -> Void
+    let availableGroups: [String]
+    var userProfile: UserProfile
 
+    @State private var showingSaveDialog = false
     @State private var showingSaveConfirmation = false
+    @State private var selectedGroup: String = ""
     @State private var newComment = ""
     @State private var replyingTo: SequenceComment?
     @State private var replyText = ""
@@ -946,7 +978,10 @@ struct SharedSequenceDetailView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        saveSequence()
+                        if selectedGroup.isEmpty && !availableGroups.isEmpty {
+                            selectedGroup = availableGroups.first ?? "My Sequences"
+                        }
+                        showingSaveDialog = true
                     } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
                     }
@@ -954,7 +989,10 @@ struct SharedSequenceDetailView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
-                    saveSequence()
+                    if selectedGroup.isEmpty && !availableGroups.isEmpty {
+                        selectedGroup = availableGroups.first ?? "My Sequences"
+                    }
+                    showingSaveDialog = true
                 } label: {
                     Label("Save to My Sequences", systemImage: "square.and.arrow.down")
                         .font(.headline)
@@ -967,12 +1005,27 @@ struct SharedSequenceDetailView: View {
                 .padding()
                 .background(.ultraThinMaterial)
             }
+            .sheet(isPresented: $showingSaveDialog) {
+                SaveToGroupSheet(
+                    sequenceName: sharedSequence.sequence.name,
+                    availableGroups: availableGroups,
+                    selectedGroup: $selectedGroup,
+                    onSave: {
+                        saveSequence()
+                        showingSaveDialog = false
+                    },
+                    onCancel: {
+                        showingSaveDialog = false
+                    }
+                )
+                .presentationDetents([.medium])
+            }
             .alert("Saved!", isPresented: $showingSaveConfirmation) {
                 Button("OK") {
                     dismiss()
                 }
             } message: {
-                Text("This sequence has been added to your sequences.")
+                Text("This sequence has been added to \"\(selectedGroup)\".")
             }
             .sheet(item: $replyingTo) { comment in
                 ReplySheet(comment: comment, replyText: $replyText) {
@@ -1119,9 +1172,10 @@ struct SharedSequenceDetailView: View {
         let savedSequence = YogaSequence(
             name: sharedSequence.sequence.name,
             description: sharedSequence.sequence.description,
-            sections: sharedSequence.sequence.sections
+            sections: sharedSequence.sequence.sections,
+            group: selectedGroup.isEmpty ? "My Sequences" : selectedGroup
         )
-        onSaveToSequences(savedSequence)
+        onSaveToSequences(savedSequence, selectedGroup)
         showingSaveConfirmation = true
     }
 
@@ -1132,6 +1186,7 @@ struct SharedSequenceDetailView: View {
             content: newComment
         )
         sharedSequence.comments.insert(comment, at: 0)
+        userProfile.commentedSequenceIds.insert(sharedSequence.id)
         newComment = ""
     }
 
@@ -1453,6 +1508,7 @@ struct PostDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var post: CommunityPost
     let onClose: () -> Void
+    var userProfile: UserProfile
 
     @State private var newReply = ""
     @State private var isLiked = false
@@ -1487,6 +1543,11 @@ struct PostDetailView: View {
                         Button {
                             isLiked.toggle()
                             post.likes += isLiked ? 1 : -1
+                            if isLiked {
+                                userProfile.likedPostIds.insert(post.id)
+                            } else {
+                                userProfile.likedPostIds.remove(post.id)
+                            }
                         } label: {
                             Label("\(post.likes)", systemImage: isLiked ? "heart.fill" : "heart")
                                 .font(.subheadline)
@@ -1575,6 +1636,9 @@ struct PostDetailView: View {
                     }
                 }
             }
+            .onAppear {
+                isLiked = userProfile.likedPostIds.contains(post.id)
+            }
         }
     }
 
@@ -1585,6 +1649,7 @@ struct PostDetailView: View {
             content: newReply
         )
         post.replies.insert(reply, at: 0)
+        userProfile.commentedPostIds.insert(post.id)
         newReply = ""
     }
 }
@@ -1636,8 +1701,7 @@ struct AllDiscussionsView: View {
 struct AllSequencesView: View {
     @Environment(\.dismiss) private var dismiss
     let sequences: [SharedSequence]
-    @Binding var likedSequenceIds: Set<String>
-    @Binding var savedSequenceIds: Set<String>
+    var userProfile: UserProfile
     let onSelectSequence: (SharedSequence) -> Void
     let onLike: (SharedSequence) -> Void
     let onSave: (SharedSequence) -> Void
@@ -1649,8 +1713,8 @@ struct AllSequencesView: View {
                     ForEach(sequences) { sequence in
                         CommunitySequenceCard(
                             sequence: sequence,
-                            isLiked: likedSequenceIds.contains(sequence.id),
-                            isSaved: savedSequenceIds.contains(sequence.id),
+                            isLiked: userProfile.likedSequenceIds.contains(sequence.id),
+                            isSaved: userProfile.savedSequenceIds.contains(sequence.id),
                             onTap: { onSelectSequence(sequence) },
                             onLike: { onLike(sequence) },
                             onSave: { onSave(sequence) }
@@ -1673,6 +1737,163 @@ struct AllSequencesView: View {
     }
 }
 
+// MARK: - Save To Group Sheet
+
+struct SaveToGroupSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let sequenceName: String
+    let availableGroups: [String]
+    @Binding var selectedGroup: String
+    let onSave: () -> Void
+    let onCancel: () -> Void
+
+    @State private var newGroupName = ""
+    @State private var showingNewGroup = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                // Sequence info
+                VStack(spacing: 8) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.largeTitle)
+                        .foregroundStyle(Color.accentColor)
+
+                    Text("Save to My Sequences")
+                        .font(.headline)
+
+                    Text("\"\(sequenceName)\"")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top)
+
+                // Group selection
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Select a group")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    if availableGroups.isEmpty {
+                        Text("No groups available. The sequence will be saved to \"My Sequences\".")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 8) {
+                                ForEach(availableGroups, id: \.self) { group in
+                                    GroupSelectionRow(
+                                        groupName: group,
+                                        isSelected: selectedGroup == group,
+                                        onTap: { selectedGroup = group }
+                                    )
+                                }
+
+                                // Add new group button
+                                Button {
+                                    showingNewGroup = true
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundStyle(Color.accentColor)
+                                        Text("Create New Group")
+                                            .foregroundStyle(Color.accentColor)
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .frame(maxHeight: 200)
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer()
+
+                // Save button
+                Button {
+                    onSave()
+                } label: {
+                    Text("Save")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+            .navigationTitle("Save Sequence")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                }
+            }
+            .alert("New Group", isPresented: $showingNewGroup) {
+                TextField("Group Name", text: $newGroupName)
+                Button("Cancel", role: .cancel) {
+                    newGroupName = ""
+                }
+                Button("Create") {
+                    if !newGroupName.isEmpty {
+                        selectedGroup = newGroupName
+                    }
+                    newGroupName = ""
+                }
+            } message: {
+                Text("Enter a name for the new group")
+            }
+        }
+    }
+}
+
+struct GroupSelectionRow: View {
+    let groupName: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Image(systemName: "folder.fill")
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+
+                Text(groupName)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding()
+            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 #Preview {
-    CommunityView(sequenceViewModel: SequenceViewModel(), poses: MockPoseData.poses)
+    CommunityView(sequenceViewModel: SequenceViewModel(), poses: MockPoseData.poses, userProfile: UserProfile.mock)
 }

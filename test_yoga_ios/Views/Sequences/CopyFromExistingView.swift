@@ -11,6 +11,7 @@ struct CopyFromExistingView: View {
     @Environment(\.dismiss) private var dismiss
     var viewModel: SequenceViewModel
     let poses: [Pose]
+    var groupName: String = "My Sequences"
     var onSave: (() -> Void)?
 
     @State private var selectedSections: [SelectedSection] = []
@@ -168,7 +169,8 @@ struct CopyFromExistingView: View {
 
         return YogaSequence(
             name: sequenceName.isEmpty ? "Copied Sequence" : sequenceName,
-            sections: copiedSections
+            sections: copiedSections,
+            group: groupName
         )
     }
 }

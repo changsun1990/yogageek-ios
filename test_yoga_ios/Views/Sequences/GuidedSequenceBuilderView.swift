@@ -35,6 +35,7 @@ struct GuidedSequenceBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     var viewModel: SequenceViewModel
     let poses: [Pose]
+    var groupName: String = "My Sequences"
     var onSave: (() -> Void)?
 
     @State private var currentStep: GuidedBuilderStep = .chooseStartingPoint
@@ -51,11 +52,12 @@ struct GuidedSequenceBuilderView: View {
 
     private let sectionNames = ["Beginning", "Flow 1", "Flow 2", "Ending"]
 
-    init(viewModel: SequenceViewModel, poses: [Pose], onSave: (() -> Void)? = nil) {
+    init(viewModel: SequenceViewModel, poses: [Pose], groupName: String = "My Sequences", onSave: (() -> Void)? = nil) {
         self.viewModel = viewModel
         self.poses = poses
+        self.groupName = groupName
         self.onSave = onSave
-        _sequence = State(initialValue: YogaSequence())
+        _sequence = State(initialValue: YogaSequence(group: groupName))
     }
 
     var body: some View {
@@ -217,7 +219,7 @@ struct GuidedSequenceBuilderView: View {
                         CategoryButton(
                             category: category,
                             isSelected: selectedCategory == category,
-                            poseCount: poses.filter { $0.category == category }.count
+                            poseCount: poses.filter { $0.categories.contains(category.rawValue) }.count
                         ) {
                             selectedCategory = category
                         }
@@ -451,12 +453,15 @@ struct GuidedSequenceBuilderView: View {
             sectionPoses = poses.filter { $0.difficulty == .beginner }
         case 1, 2: // Flow sections - mix based on selected category or all
             if let category = selectedCategory {
-                sectionPoses = poses.filter { $0.category == category }
+                sectionPoses = poses.filter { $0.categories.contains(category.rawValue) }
             } else {
                 sectionPoses = poses.filter { $0.difficulty != .advanced }
             }
-        case 3: // Ending - supine/seated
-            sectionPoses = poses.filter { $0.category == .supine || $0.category == .seated }
+        case 3: // Ending - restorative/seated poses
+            sectionPoses = poses.filter {
+                $0.categories.contains(PoseCategory.restorative.rawValue) ||
+                $0.categories.contains(PoseCategory.seated.rawValue)
+            }
         default:
             sectionPoses = poses
         }
@@ -784,7 +789,7 @@ struct PoseRowInSection: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
 
-                        Text(pose.category.displayName)
+                        Text(pose.categoriesDisplayName)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

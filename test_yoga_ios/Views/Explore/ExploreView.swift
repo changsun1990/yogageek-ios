@@ -18,19 +18,24 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if poseViewModel.isLoading && poseViewModel.poses.isEmpty {
-                    loadingView
-                } else {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(poseViewModel.filteredPoses) { pose in
-                            NavigationLink(value: pose) {
-                                PoseCardView(pose: pose)
+            VStack(spacing: 0) {
+                // Filter chips below search
+                filterChipsRow
+
+                ScrollView {
+                    if poseViewModel.isLoading && poseViewModel.poses.isEmpty {
+                        loadingView
+                    } else {
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(poseViewModel.filteredPoses) { pose in
+                                NavigationLink(value: pose) {
+                                    PoseCardView(pose: pose)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding()
                     }
-                    .padding()
                 }
             }
             .background(Color(.systemGroupedBackground))
@@ -38,60 +43,9 @@ struct ExploreView: View {
                 poseViewModel.refresh()
             }
             .navigationTitle("Explore")
-            .searchable(text: $poseViewModel.searchText, prompt: "Search poses")
+            .searchable(text: $poseViewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search poses")
             .navigationDestination(for: Pose.self) { pose in
                 PoseDetailView(pose: pose, poses: poseViewModel.poses, sequenceViewModel: sequenceViewModel)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Section("Category") {
-                            Button("All Categories") {
-                                poseViewModel.selectedCategory = nil
-                            }
-                            ForEach(PoseCategory.allCases, id: \.self) { category in
-                                Button {
-                                    poseViewModel.selectedCategory = category
-                                } label: {
-                                    HStack {
-                                        Text(category.displayName)
-                                        if poseViewModel.selectedCategory == category {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Section("Difficulty") {
-                            Button("All Levels") {
-                                poseViewModel.selectedDifficulty = nil
-                            }
-                            ForEach(PoseDifficulty.allCases, id: \.self) { difficulty in
-                                Button {
-                                    poseViewModel.selectedDifficulty = difficulty
-                                } label: {
-                                    HStack {
-                                        Text(difficulty.displayName)
-                                        if poseViewModel.selectedDifficulty == difficulty {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if poseViewModel.selectedCategory != nil || poseViewModel.selectedDifficulty != nil {
-                            Section {
-                                Button("Clear Filters", role: .destructive) {
-                                    poseViewModel.clearFilters()
-                                }
-                            }
-                        }
-                    } label: {
-                        Image(systemName: filterApplied ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                    }
-                }
             }
             .overlay {
                 if poseViewModel.filteredPoses.isEmpty && !poseViewModel.isLoading {
@@ -109,8 +63,91 @@ struct ExploreView: View {
         }
     }
 
-    private var filterApplied: Bool {
-        poseViewModel.selectedCategory != nil || poseViewModel.selectedDifficulty != nil
+    private var filterChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                // Category Filter
+                Menu {
+                    Button {
+                        poseViewModel.selectedCategory = nil
+                    } label: {
+                        HStack {
+                            Text("All")
+                            if poseViewModel.selectedCategory == nil {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    ForEach(PoseCategory.allCases, id: \.self) { category in
+                        Button {
+                            poseViewModel.selectedCategory = category
+                        } label: {
+                            HStack {
+                                Text(category.displayName)
+                                if poseViewModel.selectedCategory == category {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    FilterChip(
+                        title: poseViewModel.selectedCategory?.displayName ?? "Category",
+                        isActive: poseViewModel.selectedCategory != nil
+                    )
+                }
+
+                // Difficulty Filter
+                Menu {
+                    Button {
+                        poseViewModel.selectedDifficulty = nil
+                    } label: {
+                        HStack {
+                            Text("All")
+                            if poseViewModel.selectedDifficulty == nil {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    ForEach(PoseDifficulty.allCases, id: \.self) { difficulty in
+                        Button {
+                            poseViewModel.selectedDifficulty = difficulty
+                        } label: {
+                            HStack {
+                                Text(difficulty.displayName)
+                                if poseViewModel.selectedDifficulty == difficulty {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    FilterChip(
+                        title: poseViewModel.selectedDifficulty?.displayName ?? "Difficulty",
+                        isActive: poseViewModel.selectedDifficulty != nil
+                    )
+                }
+
+                // Clear filters button
+                if poseViewModel.selectedCategory != nil || poseViewModel.selectedDifficulty != nil {
+                    Button {
+                        poseViewModel.clearFilters()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+        }
+        .background(Color(.systemBackground))
     }
 
     private var loadingView: some View {
@@ -121,6 +158,26 @@ struct ExploreView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, minHeight: 300)
+    }
+}
+
+struct FilterChip: View {
+    let title: String
+    let isActive: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+                .lineLimit(1)
+            Image(systemName: "chevron.down")
+                .font(.caption2)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(isActive ? Color.accentColor : Color(.systemGray5))
+        .foregroundStyle(isActive ? .white : .primary)
+        .clipShape(Capsule())
     }
 }
 

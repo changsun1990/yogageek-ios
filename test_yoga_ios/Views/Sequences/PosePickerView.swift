@@ -121,7 +121,7 @@ struct PosePickerRow: View {
 
                     Spacer()
 
-                    Text(pose.category.displayName)
+                    Text(pose.categoriesDisplayName)
                         .font(.caption2)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -168,7 +168,7 @@ struct PoseDetailSheet: View {
                         }
 
                         HStack(spacing: 12) {
-                            Label(pose.category.displayName, systemImage: "tag")
+                            Label(pose.categoriesDisplayName, systemImage: "tag")
                             Label(pose.difficulty.displayName, systemImage: "chart.bar")
                         }
                         .font(.caption)

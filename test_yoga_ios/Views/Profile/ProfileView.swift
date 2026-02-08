@@ -25,6 +25,59 @@ class UserProfile {
     var sequencesShared: Int = 0
     var totalPracticeMinutes: Int = 0
 
+    // Community interaction tracking
+    var likedSequenceIds: Set<String> = [] {
+        didSet { saveCommunityData() }
+    }
+    var savedSequenceIds: Set<String> = [] {
+        didSet { saveCommunityData() }
+    }
+    var commentedSequenceIds: Set<String> = [] {
+        didSet { saveCommunityData() }
+    }
+    var likedPostIds: Set<String> = [] {
+        didSet { saveCommunityData() }
+    }
+    var commentedPostIds: Set<String> = [] {
+        didSet { saveCommunityData() }
+    }
+    var sharedSequences: [SharedSequence] = [] {
+        didSet { saveCommunityData() }
+    }
+
+    private let communityDataKey = "user_community_data"
+
+    init() {
+        loadCommunityData()
+    }
+
+    private func saveCommunityData() {
+        let data = CommunityData(
+            likedSequenceIds: Array(likedSequenceIds),
+            savedSequenceIds: Array(savedSequenceIds),
+            commentedSequenceIds: Array(commentedSequenceIds),
+            likedPostIds: Array(likedPostIds),
+            commentedPostIds: Array(commentedPostIds),
+            sharedSequences: sharedSequences
+        )
+        if let encoded = try? JSONEncoder().encode(data) {
+            UserDefaults.standard.set(encoded, forKey: communityDataKey)
+        }
+    }
+
+    private func loadCommunityData() {
+        guard let data = UserDefaults.standard.data(forKey: communityDataKey),
+              let decoded = try? JSONDecoder().decode(CommunityData.self, from: data) else {
+            return
+        }
+        likedSequenceIds = Set(decoded.likedSequenceIds)
+        savedSequenceIds = Set(decoded.savedSequenceIds)
+        commentedSequenceIds = Set(decoded.commentedSequenceIds)
+        likedPostIds = Set(decoded.likedPostIds)
+        commentedPostIds = Set(decoded.commentedPostIds)
+        sharedSequences = decoded.sharedSequences
+    }
+
     static var mock: UserProfile {
         let profile = UserProfile()
         profile.displayName = "Yoga Enthusiast"
@@ -39,6 +92,16 @@ class UserProfile {
         profile.totalPracticeMinutes = 1250
         return profile
     }
+}
+
+// Helper struct for encoding/decoding community data
+private struct CommunityData: Codable {
+    let likedSequenceIds: [String]
+    let savedSequenceIds: [String]
+    let commentedSequenceIds: [String]
+    let likedPostIds: [String]
+    let commentedPostIds: [String]
+    let sharedSequences: [SharedSequence]
 }
 
 enum YogaExperienceLevel: String, CaseIterable, Identifiable {
@@ -157,8 +220,23 @@ enum PracticeTime: String, CaseIterable, Identifiable {
 // MARK: - Profile View
 
 struct ProfileView: View {
-    @State private var userProfile = UserProfile.mock
+    @Bindable var userProfile: UserProfile
+    var sequenceViewModel: SequenceViewModel?
+    var onNavigateToSequences: (() -> Void)?
+
     @State private var showingEditProfile = false
+    @State private var selectedActivityTab: ActivityTab = .sequences
+    @State private var showingLikedSequences = false
+    @State private var showingSavedSequences = false
+    @State private var showingCommentedSequences = false
+    @State private var showingLikedDiscussions = false
+    @State private var showingCommentedDiscussions = false
+    @State private var showingSharedSequences = false
+
+    enum ActivityTab: String, CaseIterable {
+        case sequences = "Sequences"
+        case discussions = "Discussions"
+    }
 
     var body: some View {
         NavigationStack {
@@ -169,6 +247,9 @@ struct ProfileView: View {
 
                     // Stats
                     statsSection
+
+                    // Community Activity section
+                    communityActivitySection
 
                     // Experience
                     experienceSection
@@ -196,7 +277,50 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showingEditProfile) {
-                EditProfileView(userProfile: $userProfile)
+                EditProfileView(userProfile: userProfile)
+            }
+            .sheet(isPresented: $showingLikedSequences) {
+                ActivityDetailView(
+                    title: "Liked Sequences",
+                    icon: "heart.fill",
+                    iconColor: .red,
+                    sequenceIds: userProfile.likedSequenceIds
+                )
+            }
+            .sheet(isPresented: $showingSavedSequences) {
+                ActivityDetailView(
+                    title: "Saved Sequences",
+                    icon: "bookmark.fill",
+                    iconColor: Color.accentColor,
+                    sequenceIds: userProfile.savedSequenceIds
+                )
+            }
+            .sheet(isPresented: $showingCommentedSequences) {
+                ActivityDetailView(
+                    title: "Commented Sequences",
+                    icon: "bubble.right.fill",
+                    iconColor: .green,
+                    sequenceIds: userProfile.commentedSequenceIds
+                )
+            }
+            .sheet(isPresented: $showingLikedDiscussions) {
+                DiscussionActivityDetailView(
+                    title: "Liked Discussions",
+                    icon: "heart.fill",
+                    iconColor: .red,
+                    postIds: userProfile.likedPostIds
+                )
+            }
+            .sheet(isPresented: $showingCommentedDiscussions) {
+                DiscussionActivityDetailView(
+                    title: "Commented Discussions",
+                    icon: "bubble.right.fill",
+                    iconColor: .green,
+                    postIds: userProfile.commentedPostIds
+                )
+            }
+            .sheet(isPresented: $showingSharedSequences) {
+                SharedSequencesDetailView(sharedSequences: userProfile.sharedSequences)
             }
         }
     }
@@ -242,17 +366,27 @@ struct ProfileView: View {
 
     private var statsSection: some View {
         HStack(spacing: 16) {
-            StatCard(
-                icon: "rectangle.stack.fill",
-                value: "\(userProfile.sequencesCreated)",
-                label: "Created"
-            )
+            Button {
+                onNavigateToSequences?()
+            } label: {
+                StatCard(
+                    icon: "rectangle.stack.fill",
+                    value: "\(sequenceViewModel?.sequences.count ?? 0)",
+                    label: "Created"
+                )
+            }
+            .buttonStyle(.plain)
 
-            StatCard(
-                icon: "square.and.arrow.up.fill",
-                value: "\(userProfile.sequencesShared)",
-                label: "Shared"
-            )
+            Button {
+                showingSharedSequences = true
+            } label: {
+                StatCard(
+                    icon: "square.and.arrow.up.fill",
+                    value: "\(userProfile.sharedSequences.count)",
+                    label: "Shared"
+                )
+            }
+            .buttonStyle(.plain)
 
             StatCard(
                 icon: "clock.fill",
@@ -260,6 +394,106 @@ struct ProfileView: View {
                 label: "Practice"
             )
         }
+    }
+
+    private var communityActivitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Community Activity")
+                .font(.headline)
+
+            // Tab picker
+            Picker("Activity Type", selection: $selectedActivityTab) {
+                ForEach(ActivityTab.allCases, id: \.self) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if selectedActivityTab == .sequences {
+                sequenceActivitySection
+            } else {
+                discussionActivitySection
+            }
+        }
+    }
+
+    private var sequenceActivitySection: some View {
+        VStack(spacing: 12) {
+            // Liked sequences
+            Button {
+                showingLikedSequences = true
+            } label: {
+                ActivityRow(
+                    icon: "heart.fill",
+                    iconColor: .red,
+                    title: "Liked Sequences",
+                    count: userProfile.likedSequenceIds.count
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Saved sequences
+            Button {
+                showingSavedSequences = true
+            } label: {
+                ActivityRow(
+                    icon: "bookmark.fill",
+                    iconColor: Color.accentColor,
+                    title: "Saved Sequences",
+                    count: userProfile.savedSequenceIds.count
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Commented sequences
+            Button {
+                showingCommentedSequences = true
+            } label: {
+                ActivityRow(
+                    icon: "bubble.right.fill",
+                    iconColor: .green,
+                    title: "Commented Sequences",
+                    count: userProfile.commentedSequenceIds.count
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var discussionActivitySection: some View {
+        VStack(spacing: 12) {
+            // Liked discussions
+            Button {
+                showingLikedDiscussions = true
+            } label: {
+                ActivityRow(
+                    icon: "heart.fill",
+                    iconColor: .red,
+                    title: "Liked Discussions",
+                    count: userProfile.likedPostIds.count
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Commented discussions
+            Button {
+                showingCommentedDiscussions = true
+            } label: {
+                ActivityRow(
+                    icon: "bubble.right.fill",
+                    iconColor: .green,
+                    title: "Commented Discussions",
+                    count: userProfile.commentedPostIds.count
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var experienceSection: some View {
@@ -445,6 +679,253 @@ struct StatCard: View {
     }
 }
 
+// MARK: - Activity Row
+
+struct ActivityRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(iconColor)
+                .frame(width: 32)
+
+            Text(title)
+                .font(.subheadline)
+
+            Spacer()
+
+            Text("\(count)")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Activity Detail View
+
+struct ActivityDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    let icon: String
+    let iconColor: Color
+    let sequenceIds: Set<String>
+
+    // Get sequences from mock data that match the IDs
+    private var filteredSequences: [SharedSequence] {
+        SharedSequence.mockData.filter { sequenceIds.contains($0.id) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if filteredSequences.isEmpty {
+                    ContentUnavailableView(
+                        "No \(title) Yet",
+                        systemImage: icon,
+                        description: Text("Sequences you \(title.lowercased().replacingOccurrences(of: " sequences", with: "")) will appear here.")
+                    )
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredSequences) { sharedSequence in
+                                ActivitySequenceCard(sequence: sharedSequence)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ActivitySequenceCard: View {
+    let sequence: SharedSequence
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sequence.sequence.name)
+                        .font(.headline)
+
+                    Text("by \(sequence.authorName)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+
+            if !sequence.sequence.description.isEmpty {
+                Text(sequence.sequence.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            HStack(spacing: 16) {
+                Label("\(sequence.sequence.sections.count) sections", systemImage: "rectangle.stack")
+                Label("\(sequence.sequence.totalPoseCount) poses", systemImage: "figure.yoga")
+
+                Spacer()
+
+                Label("\(sequence.likes)", systemImage: "heart.fill")
+                    .foregroundStyle(.red)
+
+                Label("\(sequence.saves)", systemImage: "bookmark.fill")
+                    .foregroundStyle(Color.accentColor)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Discussion Activity Detail View
+
+struct DiscussionActivityDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    let icon: String
+    let iconColor: Color
+    let postIds: Set<String>
+
+    // Get posts from mock data that match the IDs
+    private var filteredPosts: [CommunityPost] {
+        CommunityPost.mockData.filter { postIds.contains($0.id) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if filteredPosts.isEmpty {
+                    ContentUnavailableView(
+                        "No \(title) Yet",
+                        systemImage: icon,
+                        description: Text("Discussions you \(title.lowercased().replacingOccurrences(of: " discussions", with: "")) will appear here.")
+                    )
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredPosts) { post in
+                                ActivityPostCard(post: post)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ActivityPostCard: View {
+    let post: CommunityPost
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(post.title)
+                .font(.headline)
+
+            Text(post.content)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            HStack(spacing: 8) {
+                Text("by \(post.authorName)")
+                Text("•")
+                Text(post.createdAt, style: .relative)
+
+                Spacer()
+
+                Label("\(post.likes)", systemImage: "heart")
+                Label("\(post.replies.count)", systemImage: "bubble.right")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Shared Sequences Detail View
+
+struct SharedSequencesDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let sharedSequences: [SharedSequence]
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if sharedSequences.isEmpty {
+                    ContentUnavailableView(
+                        "No Shared Sequences Yet",
+                        systemImage: "square.and.arrow.up",
+                        description: Text("Sequences you share with the community will appear here.")
+                    )
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(sharedSequences) { sharedSequence in
+                                ActivitySequenceCard(sequence: sharedSequence)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("My Shared Sequences")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Flow Layout
 
 struct FlowLayout: Layout {
@@ -492,7 +973,7 @@ struct FlowLayout: Layout {
 
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var userProfile: UserProfile
+    var userProfile: UserProfile
 
     @State private var editedName: String = ""
     @State private var editedBio: String = ""
@@ -656,5 +1137,5 @@ struct EditProfileView: View {
 }
 
 #Preview {
-    ProfileView()
+    ProfileView(userProfile: UserProfile.mock)
 }
