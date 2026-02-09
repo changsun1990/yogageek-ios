@@ -15,6 +15,7 @@ enum AppTab: String, CaseIterable {
 }
 
 struct MainTabView: View {
+    var authViewModel: AuthViewModel?
     @State private var poseViewModel = PoseViewModel()
     @State private var sequenceViewModel = SequenceViewModel()
     @State private var userProfile = UserProfile.mock
@@ -35,7 +36,7 @@ struct MainTabView: View {
             }
 
             Tab("Profile", systemImage: "person.circle", value: .profile) {
-                ProfileView(userProfile: userProfile, sequenceViewModel: sequenceViewModel, onNavigateToSequences: {
+                ProfileView(userProfile: userProfile, sequenceViewModel: sequenceViewModel, authViewModel: authViewModel, onNavigateToSequences: {
                     selectedTab = .mySequences
                 })
             }

@@ -18,11 +18,11 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Filter chips below search
-                filterChipsRow
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Filter chips at top of scroll content
+                    filterChipsRow
 
-                ScrollView {
                     if poseViewModel.isLoading && poseViewModel.poses.isEmpty {
                         loadingView
                     } else {
@@ -43,7 +43,7 @@ struct ExploreView: View {
                 poseViewModel.refresh()
             }
             .navigationTitle("Explore")
-            .searchable(text: $poseViewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search poses")
+            .searchable(text: $poseViewModel.searchText, prompt: "Search poses")
             .navigationDestination(for: Pose.self) { pose in
                 PoseDetailView(pose: pose, poses: poseViewModel.poses, sequenceViewModel: sequenceViewModel)
             }
@@ -68,29 +68,15 @@ struct ExploreView: View {
             HStack(spacing: 8) {
                 // Category Filter
                 Menu {
-                    Button {
+                    Button("All") {
                         poseViewModel.selectedCategory = nil
-                    } label: {
-                        HStack {
-                            Text("All")
-                            if poseViewModel.selectedCategory == nil {
-                                Image(systemName: "checkmark")
-                            }
-                        }
                     }
 
                     Divider()
 
-                    ForEach(PoseCategory.allCases, id: \.self) { category in
-                        Button {
+                    ForEach(Array(PoseCategory.allCases), id: \.self) { category in
+                        Button(category.displayName) {
                             poseViewModel.selectedCategory = category
-                        } label: {
-                            HStack {
-                                Text(category.displayName)
-                                if poseViewModel.selectedCategory == category {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
                         }
                     }
                 } label: {
@@ -102,29 +88,15 @@ struct ExploreView: View {
 
                 // Difficulty Filter
                 Menu {
-                    Button {
+                    Button("All") {
                         poseViewModel.selectedDifficulty = nil
-                    } label: {
-                        HStack {
-                            Text("All")
-                            if poseViewModel.selectedDifficulty == nil {
-                                Image(systemName: "checkmark")
-                            }
-                        }
                     }
 
                     Divider()
 
-                    ForEach(PoseDifficulty.allCases, id: \.self) { difficulty in
-                        Button {
+                    ForEach(Array(PoseDifficulty.allCases), id: \.self) { difficulty in
+                        Button(difficulty.displayName) {
                             poseViewModel.selectedDifficulty = difficulty
-                        } label: {
-                            HStack {
-                                Text(difficulty.displayName)
-                                if poseViewModel.selectedDifficulty == difficulty {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
                         }
                     }
                 } label: {
@@ -147,6 +119,7 @@ struct ExploreView: View {
             .padding(.horizontal)
             .padding(.vertical, 10)
         }
+        .frame(minHeight: 44)
         .background(Color(.systemBackground))
     }
 
@@ -173,10 +146,10 @@ struct FilterChip: View {
             Image(systemName: "chevron.down")
                 .font(.caption2)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(isActive ? Color.accentColor : Color(.systemGray5))
-        .foregroundStyle(isActive ? .white : .primary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(isActive ? Color.accentColor : Color.gray.opacity(0.2))
+        .foregroundColor(isActive ? .white : .primary)
         .clipShape(Capsule())
     }
 }

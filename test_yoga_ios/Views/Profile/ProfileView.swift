@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 // MARK: - User Profile Model
 
@@ -222,6 +223,7 @@ enum PracticeTime: String, CaseIterable, Identifiable {
 struct ProfileView: View {
     @Bindable var userProfile: UserProfile
     var sequenceViewModel: SequenceViewModel?
+    var authViewModel: AuthViewModel?
     var onNavigateToSequences: (() -> Void)?
 
     @State private var showingEditProfile = false
@@ -232,6 +234,7 @@ struct ProfileView: View {
     @State private var showingLikedDiscussions = false
     @State private var showingCommentedDiscussions = false
     @State private var showingSharedSequences = false
+    @State private var showingSignOutConfirmation = false
 
     enum ActivityTab: String, CaseIterable {
         case sequences = "Sequences"
@@ -269,12 +272,34 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingEditProfile = true
+                    Menu {
+                        Button {
+                            showingEditProfile = true
+                        } label: {
+                            Label("Edit Profile", systemImage: "pencil")
+                        }
+
+                        if authViewModel != nil {
+                            Divider()
+
+                            Button(role: .destructive) {
+                                showingSignOutConfirmation = true
+                            } label: {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        }
                     } label: {
-                        Text("Edit")
+                        Image(systemName: "ellipsis.circle")
                     }
                 }
+            }
+            .alert("Sign Out", isPresented: $showingSignOutConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Sign Out", role: .destructive) {
+                    authViewModel?.signOut()
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
             }
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileView(userProfile: userProfile)
@@ -325,6 +350,14 @@ struct ProfileView: View {
         }
     }
 
+    private var displayName: String {
+        // First try Firebase user's display name, then fall back to userProfile
+        if let firebaseName = authViewModel?.currentUser?.displayName, !firebaseName.isEmpty {
+            return firebaseName
+        }
+        return userProfile.displayName.isEmpty ? "Yoga Practitioner" : userProfile.displayName
+    }
+
     private var profileHeader: some View {
         VStack(spacing: 16) {
             Image(systemName: userProfile.profileImageName)
@@ -332,7 +365,7 @@ struct ProfileView: View {
                 .foregroundStyle(Color.accentColor)
 
             VStack(spacing: 4) {
-                Text(userProfile.displayName.isEmpty ? "Yoga Practitioner" : userProfile.displayName)
+                Text(displayName)
                     .font(.title2)
                     .fontWeight(.bold)
 

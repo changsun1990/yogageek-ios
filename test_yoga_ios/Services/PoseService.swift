@@ -41,16 +41,31 @@ class PoseService {
             }
 
             var imageURL = data["imageURL"] as? String ?? "figure.yoga"
+
+            // Handle different Firebase Storage URL formats
             let storagePrefix = "https://storage.googleapis.com/"
+            let gsPrefix = "gs://"
+
             if imageURL.hasPrefix(storagePrefix),
                let slashIndex = imageURL.dropFirst(storagePrefix.count).firstIndex(of: "/") {
+                // Format: https://storage.googleapis.com/bucket/path/image.jpg
                 let remainder = imageURL.dropFirst(storagePrefix.count)
                 let bucket = String(remainder[..<slashIndex])
                 let path = String(remainder[remainder.index(after: slashIndex)...])
                 let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)?
                     .replacingOccurrences(of: "/", with: "%2F") ?? path
                 imageURL = "https://firebasestorage.googleapis.com/v0/b/\(bucket)/o/\(encodedPath)?alt=media"
+            } else if imageURL.hasPrefix(gsPrefix),
+                      let slashIndex = imageURL.dropFirst(gsPrefix.count).firstIndex(of: "/") {
+                // Format: gs://bucket/path/image.jpg
+                let remainder = imageURL.dropFirst(gsPrefix.count)
+                let bucket = String(remainder[..<slashIndex])
+                let path = String(remainder[remainder.index(after: slashIndex)...])
+                let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)?
+                    .replacingOccurrences(of: "/", with: "%2F") ?? path
+                imageURL = "https://firebasestorage.googleapis.com/v0/b/\(bucket)/o/\(encodedPath)?alt=media"
             }
+            // If it's already a firebasestorage.googleapis.com URL or a regular URL, use as-is
 
             let difficulty = PoseDifficulty(rawValue: difficultyString) ?? .beginner
 
