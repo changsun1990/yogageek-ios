@@ -5,6 +5,7 @@
 //  Created by Chang Liu on 2/7/26.
 //
 
+import AuthenticationServices
 import Foundation
 import FirebaseAuth
 import FirebaseCore
@@ -109,6 +110,35 @@ class AuthService {
         )
 
         let authResult = try await Auth.auth().signIn(with: credential)
+        return authResult.user
+    }
+
+    // MARK: - Apple Sign In
+
+    @MainActor
+    func signInWithApple() async throws -> User {
+        let helper = AppleSignInHelper()
+        let appleResult = try await helper.signIn()
+
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: appleResult.idToken,
+            rawNonce: appleResult.rawNonce,
+            fullName: appleResult.fullName
+        )
+
+        let authResult = try await Auth.auth().signIn(with: credential)
+
+        // Apple only provides the name on first sign-in, so set it now if available
+        if authResult.user.displayName == nil || authResult.user.displayName?.isEmpty == true,
+           let fullName = appleResult.fullName {
+            let displayName = [fullName.givenName, fullName.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            if !displayName.isEmpty {
+                try await updateDisplayName(displayName)
+            }
+        }
+
         return authResult.user
     }
 

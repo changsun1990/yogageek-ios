@@ -5,15 +5,21 @@
 //  Created by Chang Liu on 1/12/26.
 //
 
-import SwiftUI
+import FirebaseAppCheck
 import FirebaseCore
 import GoogleSignIn
+import SwiftUI
 
 @main
 struct test_yoga_iosApp: App {
     @State private var authViewModel: AuthViewModel
 
     init() {
+        #if DEBUG
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+        #else
+        AppCheck.setAppCheckProviderFactory(DeviceCheckProviderFactory())
+        #endif
         FirebaseApp.configure()
         _authViewModel = State(initialValue: AuthViewModel())
     }

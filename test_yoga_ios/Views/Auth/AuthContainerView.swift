@@ -145,6 +145,9 @@ struct LoginView: View {
                 // Google Sign In button
                 GoogleSignInButton(authViewModel: authViewModel)
 
+                // Apple Sign In button
+                AppleSignInButton(authViewModel: authViewModel)
+
                 // Sign up link
                 HStack {
                     Text("Don't have an account?")
@@ -341,6 +344,9 @@ struct SignUpView: View {
                 // Google Sign In button
                 GoogleSignInButton(authViewModel: authViewModel)
 
+                // Apple Sign In button
+                AppleSignInButton(authViewModel: authViewModel)
+
                 // Sign in link
                 HStack {
                     Text("Already have an account?")
@@ -400,6 +406,37 @@ struct GoogleSignInButton: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color(.systemGray4), lineWidth: 1)
             )
+        }
+        .disabled(authViewModel.isLoading)
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - Apple Sign In Button
+
+struct AppleSignInButton: View {
+    var authViewModel: AuthViewModel
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Button {
+            Task {
+                await authViewModel.signInWithApple()
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 20))
+
+                Text("Continue with Apple")
+                    .fontWeight(.medium)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(colorScheme == .dark ? Color.white : Color.black)
+            .foregroundStyle(colorScheme == .dark ? .black : .white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .disabled(authViewModel.isLoading)
         .padding(.horizontal)

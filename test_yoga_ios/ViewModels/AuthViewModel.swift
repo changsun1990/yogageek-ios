@@ -112,6 +112,32 @@ class AuthViewModel: @unchecked Sendable {
         }
     }
 
+    // MARK: - Apple Sign In
+
+    func signInWithApple() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let user = try await AuthService.shared.signInWithApple()
+            await MainActor.run {
+                self.currentUser = user
+                self.isSignedIn = true
+                self.isLoading = false
+            }
+        } catch let error as AuthError {
+            await MainActor.run {
+                self.errorMessage = error.errorDescription
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+            }
+        }
+    }
+
     // MARK: - Sign Out
 
     func signOut() {
