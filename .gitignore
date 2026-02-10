@@ -1,0 +1,11 @@
+# Private keys
+*.p8
+
+# Xcode user-specific settings
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# Firebase/Google credentials
+GoogleService-Info.plist
