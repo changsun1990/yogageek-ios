@@ -9,14 +9,12 @@ import SwiftUI
 
 struct CommunityView: View {
     var sequenceViewModel: SequenceViewModel
+    var communityViewModel: CommunityViewModel
     let poses: [Pose]
     @Bindable var userProfile: UserProfile
 
-    @State private var communitySequences: [SharedSequence] = []
-    @State private var isLoading = false
     @State private var selectedSequence: SharedSequence?
     @State private var sequenceToShare: YogaSequence?
-    @State private var communityPosts: [CommunityPost] = CommunityPost.mockData
     @State private var showingNewPost = false
     @State private var selectedPost: CommunityPost?
     @State private var showingAllDiscussions = false
@@ -64,20 +62,15 @@ struct CommunityView: View {
                     }
                 }
             }
-            .refreshable {
-                await loadCommunitySequences()
-            }
-            .task {
-                await loadCommunitySequences()
-            }
             .sheet(item: $selectedSequence) { sequence in
                 SharedSequenceDetailView(
-                    sharedSequence: binding(for: sequence),
+                    sharedSequence: sequence,
+                    communityViewModel: communityViewModel,
                     poses: poses,
                     isLiked: userProfile.likedSequenceIds.contains(sequence.id),
                     isSaved: userProfile.savedSequenceIds.contains(sequence.id),
-                    onLike: { toggleLike(sequence) },
-                    onSave: { toggleSave(sequence) },
+                    onLike: { communityViewModel.toggleLike(sequenceId: sequence.id, userProfile: userProfile) },
+                    onSave: { communityViewModel.toggleSave(sequenceId: sequence.id, userProfile: userProfile) },
                     onSaveToSequences: { savedSequence, groupName in
                         // Add the group if it doesn't exist
                         if !sequenceViewModel.allGroups.contains(groupName) && !groupName.isEmpty {
@@ -90,30 +83,26 @@ struct CommunityView: View {
                 )
             }
             .sheet(item: $sequenceToShare) { sequence in
-                ShareSequenceView(sequence: sequence) { sharedSequence in
-                    // Add the shared sequence to community list
-                    communitySequences.insert(sharedSequence, at: 0)
-                    // Track in user profile
-                    userProfile.sharedSequences.insert(sharedSequence, at: 0)
+                ShareSequenceView(sequence: sequence, communityViewModel: communityViewModel) {
                     sequenceToShare = nil
                 }
             }
             .sheet(isPresented: $showingNewPost) {
-                NewPostView { post in
-                    communityPosts.insert(post, at: 0)
+                NewPostView(communityViewModel: communityViewModel) {
                     showingNewPost = false
                 }
             }
             .sheet(item: $selectedPost) { post in
                 PostDetailView(
-                    post: bindingForPost(post),
+                    post: post,
+                    communityViewModel: communityViewModel,
                     onClose: { selectedPost = nil },
                     userProfile: userProfile
                 )
             }
             .sheet(isPresented: $showingAllDiscussions) {
                 AllDiscussionsView(
-                    posts: $communityPosts,
+                    posts: communityViewModel.posts,
                     onSelectPost: { post in
                         showingAllDiscussions = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -130,7 +119,7 @@ struct CommunityView: View {
             }
             .sheet(isPresented: $showingAllSequences) {
                 AllSequencesView(
-                    sequences: communitySequences,
+                    sequences: communityViewModel.sharedSequences,
                     userProfile: userProfile,
                     onSelectSequence: { sequence in
                         showingAllSequences = false
@@ -138,54 +127,10 @@ struct CommunityView: View {
                             selectedSequence = sequence
                         }
                     },
-                    onLike: { toggleLike($0) },
-                    onSave: { toggleSave($0) }
+                    onLike: { communityViewModel.toggleLike(sequenceId: $0.id, userProfile: userProfile) },
+                    onSave: { communityViewModel.toggleSave(sequenceId: $0.id, userProfile: userProfile) }
                 )
             }
-        }
-    }
-
-    private func bindingForPost(_ post: CommunityPost) -> Binding<CommunityPost> {
-        Binding(
-            get: { communityPosts.first { $0.id == post.id } ?? post },
-            set: { newValue in
-                if let index = communityPosts.firstIndex(where: { $0.id == post.id }) {
-                    communityPosts[index] = newValue
-                }
-            }
-        )
-    }
-
-    private func binding(for sequence: SharedSequence) -> Binding<SharedSequence> {
-        Binding(
-            get: { communitySequences.first { $0.id == sequence.id } ?? sequence },
-            set: { newValue in
-                if let index = communitySequences.firstIndex(where: { $0.id == sequence.id }) {
-                    communitySequences[index] = newValue
-                }
-            }
-        )
-    }
-
-    private func toggleLike(_ sequence: SharedSequence) {
-        guard let index = communitySequences.firstIndex(where: { $0.id == sequence.id }) else { return }
-        if userProfile.likedSequenceIds.contains(sequence.id) {
-            userProfile.likedSequenceIds.remove(sequence.id)
-            communitySequences[index].likes -= 1
-        } else {
-            userProfile.likedSequenceIds.insert(sequence.id)
-            communitySequences[index].likes += 1
-        }
-    }
-
-    private func toggleSave(_ sequence: SharedSequence) {
-        guard let index = communitySequences.firstIndex(where: { $0.id == sequence.id }) else { return }
-        if userProfile.savedSequenceIds.contains(sequence.id) {
-            userProfile.savedSequenceIds.remove(sequence.id)
-            communitySequences[index].saves -= 1
-        } else {
-            userProfile.savedSequenceIds.insert(sequence.id)
-            communitySequences[index].saves += 1
         }
     }
 
@@ -219,15 +164,15 @@ struct CommunityView: View {
                 Text("Discussions")
                     .font(.headline)
 
-                if !communityPosts.isEmpty {
-                    Text("(\(communityPosts.count))")
+                if !communityViewModel.posts.isEmpty {
+                    Text("(\(communityViewModel.posts.count))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                if communityPosts.count > 5 {
+                if communityViewModel.posts.count > 5 {
                     Button {
                         showingAllDiscussions = true
                     } label: {
@@ -238,7 +183,7 @@ struct CommunityView: View {
                 }
             }
 
-            if communityPosts.isEmpty {
+            if communityViewModel.posts.isEmpty {
                 Text("No discussions yet. Start a conversation!")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -248,17 +193,17 @@ struct CommunityView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(communityPosts.prefix(5)) { post in
+                    ForEach(communityViewModel.posts.prefix(5)) { post in
                         CommunityPostCard(post: post) {
                             selectedPost = post
                         }
                     }
 
-                    if communityPosts.count > 5 {
+                    if communityViewModel.posts.count > 5 {
                         Button {
                             showingAllDiscussions = true
                         } label: {
-                            Text("See \(communityPosts.count - 5) more discussions")
+                            Text("See \(communityViewModel.posts.count - 5) more discussions")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .frame(maxWidth: .infinity)
@@ -278,17 +223,15 @@ struct CommunityView: View {
                 Text("Community Sequences")
                     .font(.headline)
 
-                if !communitySequences.isEmpty {
-                    Text("(\(communitySequences.count))")
+                if !communityViewModel.sharedSequences.isEmpty {
+                    Text("(\(communityViewModel.sharedSequences.count))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                if isLoading {
-                    ProgressView()
-                } else if communitySequences.count > 5 {
+                if communityViewModel.sharedSequences.count > 5 {
                     Button {
                         showingAllSequences = true
                     } label: {
@@ -299,7 +242,7 @@ struct CommunityView: View {
                 }
             }
 
-            if communitySequences.isEmpty && !isLoading {
+            if communityViewModel.sharedSequences.isEmpty {
                 ContentUnavailableView(
                     "No Shared Sequences Yet",
                     systemImage: "person.3",
@@ -308,22 +251,22 @@ struct CommunityView: View {
                 .frame(minHeight: 200)
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(communitySequences.prefix(5)) { sequence in
+                    ForEach(communityViewModel.sharedSequences.prefix(5)) { sequence in
                         CommunitySequenceCard(
                             sequence: sequence,
                             isLiked: userProfile.likedSequenceIds.contains(sequence.id),
                             isSaved: userProfile.savedSequenceIds.contains(sequence.id),
                             onTap: { selectedSequence = sequence },
-                            onLike: { toggleLike(sequence) },
-                            onSave: { toggleSave(sequence) }
+                            onLike: { communityViewModel.toggleLike(sequenceId: sequence.id, userProfile: userProfile) },
+                            onSave: { communityViewModel.toggleSave(sequenceId: sequence.id, userProfile: userProfile) }
                         )
                     }
 
-                    if communitySequences.count > 5 {
+                    if communityViewModel.sharedSequences.count > 5 {
                         Button {
                             showingAllSequences = true
                         } label: {
-                            Text("See \(communitySequences.count - 5) more sequences")
+                            Text("See \(communityViewModel.sharedSequences.count - 5) more sequences")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .frame(maxWidth: .infinity)
@@ -335,263 +278,6 @@ struct CommunityView: View {
                 }
             }
         }
-    }
-
-    private func loadCommunitySequences() async {
-        isLoading = true
-
-        // Simulate loading from server
-        // In production, this would fetch from Firestore
-        try? await Task.sleep(nanoseconds: 500_000_000)
-
-        // Combine user's shared sequences with mock data
-        // User's sequences appear first, then mock data
-        var allSequences = userProfile.sharedSequences
-
-        // Add mock data, avoiding duplicates
-        for mockSequence in SharedSequence.mockData {
-            if !allSequences.contains(where: { $0.id == mockSequence.id }) {
-                allSequences.append(mockSequence)
-            }
-        }
-
-        // Sort by shared date (newest first)
-        communitySequences = allSequences.sorted { $0.sharedAt > $1.sharedAt }
-
-        isLoading = false
-    }
-}
-
-// MARK: - Comment Model
-
-struct SequenceComment: Identifiable, Codable {
-    let id: String
-    let authorId: String
-    let authorName: String
-    let content: String
-    let createdAt: Date
-    var replies: [SequenceComment]
-
-    init(id: String = UUID().uuidString, authorId: String, authorName: String, content: String, createdAt: Date = Date(), replies: [SequenceComment] = []) {
-        self.id = id
-        self.authorId = authorId
-        self.authorName = authorName
-        self.content = content
-        self.createdAt = createdAt
-        self.replies = replies
-    }
-
-    static var mockComments: [SequenceComment] {
-        [
-            SequenceComment(
-                id: "comment-1",
-                authorId: "user-4",
-                authorName: "Alex K.",
-                content: "This sequence is amazing! Perfect for my morning routine.",
-                createdAt: Date().addingTimeInterval(-3600 * 24),
-                replies: [
-                    SequenceComment(
-                        id: "reply-1",
-                        authorId: "user-1",
-                        authorName: "Sarah Y.",
-                        content: "Thank you! Glad you enjoyed it!",
-                        createdAt: Date().addingTimeInterval(-3600 * 12)
-                    )
-                ]
-            ),
-            SequenceComment(
-                id: "comment-2",
-                authorId: "user-5",
-                authorName: "Jordan M.",
-                content: "How long do you recommend holding each pose?",
-                createdAt: Date().addingTimeInterval(-3600 * 48),
-                replies: []
-            )
-        ]
-    }
-}
-
-// MARK: - Community Post Model
-
-struct CommunityPost: Identifiable {
-    let id: String
-    let authorId: String
-    let authorName: String
-    let title: String
-    let content: String
-    let createdAt: Date
-    var replies: [SequenceComment]
-    var likes: Int
-
-    init(id: String = UUID().uuidString, authorId: String, authorName: String, title: String, content: String, createdAt: Date = Date(), replies: [SequenceComment] = [], likes: Int = 0) {
-        self.id = id
-        self.authorId = authorId
-        self.authorName = authorName
-        self.title = title
-        self.content = content
-        self.createdAt = createdAt
-        self.replies = replies
-        self.likes = likes
-    }
-
-    static var mockData: [CommunityPost] {
-        [
-            CommunityPost(
-                id: "post-1",
-                authorId: "user-7",
-                authorName: "Lisa M.",
-                title: "Best poses for lower back pain?",
-                content: "I've been dealing with lower back pain from sitting at my desk all day. What poses do you recommend for relief?",
-                createdAt: Date().addingTimeInterval(-3600 * 5),
-                replies: [
-                    SequenceComment(
-                        id: "reply-post-1",
-                        authorId: "user-2",
-                        authorName: "Mike T.",
-                        content: "Cat-cow and child's pose have really helped me! Also try gentle twists.",
-                        createdAt: Date().addingTimeInterval(-3600 * 2)
-                    )
-                ],
-                likes: 12
-            ),
-            CommunityPost(
-                id: "post-2",
-                authorId: "user-8",
-                authorName: "David K.",
-                title: "Morning vs Evening Practice",
-                content: "I'm curious about everyone's experience - do you prefer practicing yoga in the morning or evening? I find morning practice energizes me but evening helps me sleep better.",
-                createdAt: Date().addingTimeInterval(-86400 * 2),
-                replies: [
-                    SequenceComment(
-                        id: "reply-post-2a",
-                        authorId: "user-1",
-                        authorName: "Sarah Y.",
-                        content: "Morning for sure! It sets the tone for my whole day.",
-                        createdAt: Date().addingTimeInterval(-86400)
-                    ),
-                    SequenceComment(
-                        id: "reply-post-2b",
-                        authorId: "user-3",
-                        authorName: "Emma L.",
-                        content: "I do both! Short energizing flow in the morning and restorative in the evening.",
-                        createdAt: Date().addingTimeInterval(-3600 * 12)
-                    )
-                ],
-                likes: 28
-            ),
-            CommunityPost(
-                id: "post-3",
-                authorId: "user-9",
-                authorName: "Rachel S.",
-                title: "How long did it take you to master headstand?",
-                content: "I've been practicing for 6 months and still can't do a headstand. Is this normal? Any tips?",
-                createdAt: Date().addingTimeInterval(-86400 * 4),
-                replies: [],
-                likes: 8
-            )
-        ]
-    }
-}
-
-// MARK: - Shared Sequence Model
-
-struct SharedSequence: Identifiable, Codable {
-    let id: String
-    let sequence: YogaSequence
-    let authorName: String
-    let authorId: String
-    let sharedAt: Date
-    var likes: Int
-    var saves: Int
-    var comments: [SequenceComment]
-
-    static var mockData: [SharedSequence] {
-        [
-            SharedSequence(
-                id: "shared-1",
-                sequence: YogaSequence(
-                    name: "Morning Energy Flow",
-                    description: "A gentle 30-minute sequence to start your day with energy and focus.",
-                    sections: [
-                        YogaSection(name: "Warm Up", poses: [
-                            PoseEntry(poseId: "mountain-pose", duration: 60),
-                            PoseEntry(poseId: "standing-forward-fold", duration: 45)
-                        ]),
-                        YogaSection(name: "Sun Salutations", poses: [
-                            PoseEntry(poseId: "upward-prayer-pose", duration: 30),
-                            PoseEntry(poseId: "standing-forward-fold", duration: 30),
-                            PoseEntry(poseId: "downward-facing-dog", duration: 60)
-                        ]),
-                        YogaSection(name: "Cool Down", poses: [
-                            PoseEntry(poseId: "childs-pose", duration: 90)
-                        ])
-                    ]
-                ),
-                authorName: "Sarah Y.",
-                authorId: "user-1",
-                sharedAt: Date().addingTimeInterval(-86400 * 2),
-                likes: 42,
-                saves: 18,
-                comments: SequenceComment.mockComments
-            ),
-            SharedSequence(
-                id: "shared-2",
-                sequence: YogaSequence(
-                    name: "Hip Opener Journey",
-                    description: "Deep hip opening sequence for flexibility and release.",
-                    sections: [
-                        YogaSection(name: "Preparation", poses: [
-                            PoseEntry(poseId: "easy-pose", duration: 120),
-                            PoseEntry(poseId: "cat-cow-pose", duration: 60)
-                        ]),
-                        YogaSection(name: "Deep Stretches", poses: [
-                            PoseEntry(poseId: "pigeon-pose", duration: 90),
-                            PoseEntry(poseId: "lizard-pose", duration: 60)
-                        ])
-                    ]
-                ),
-                authorName: "Mike T.",
-                authorId: "user-2",
-                sharedAt: Date().addingTimeInterval(-86400 * 5),
-                likes: 89,
-                saves: 34,
-                comments: [
-                    SequenceComment(
-                        id: "comment-3",
-                        authorId: "user-6",
-                        authorName: "Casey R.",
-                        content: "My hips feel so much better after this!",
-                        createdAt: Date().addingTimeInterval(-3600 * 72)
-                    )
-                ]
-            ),
-            SharedSequence(
-                id: "shared-3",
-                sequence: YogaSequence(
-                    name: "Stress Relief & Relaxation",
-                    description: "Calming sequence to melt away tension after a long day.",
-                    sections: [
-                        YogaSection(name: "Grounding", poses: [
-                            PoseEntry(poseId: "childs-pose", duration: 90),
-                            PoseEntry(poseId: "cat-cow-pose", duration: 60)
-                        ]),
-                        YogaSection(name: "Gentle Flow", poses: [
-                            PoseEntry(poseId: "downward-facing-dog", duration: 45),
-                            PoseEntry(poseId: "standing-forward-fold", duration: 45)
-                        ]),
-                        YogaSection(name: "Restoration", poses: [
-                            PoseEntry(poseId: "corpse-pose", duration: 180)
-                        ])
-                    ]
-                ),
-                authorName: "Emma L.",
-                authorId: "user-3",
-                sharedAt: Date().addingTimeInterval(-86400),
-                likes: 156,
-                saves: 67,
-                comments: []
-            )
-        ]
     }
 }
 
@@ -679,20 +365,20 @@ struct CommunitySequenceCard: View {
 
                 // Like button
                 Button(action: onLike) {
-                    Label("\(sequence.likes)", systemImage: isLiked ? "heart.fill" : "heart")
+                    Label("\(sequence.likesCount)", systemImage: isLiked ? "heart.fill" : "heart")
                         .foregroundStyle(isLiked ? .red : .secondary)
                 }
                 .buttonStyle(.plain)
 
                 // Save button
                 Button(action: onSave) {
-                    Label("\(sequence.saves)", systemImage: isSaved ? "bookmark.fill" : "bookmark")
+                    Label("\(sequence.savesCount)", systemImage: isSaved ? "bookmark.fill" : "bookmark")
                         .foregroundStyle(isSaved ? Color.accentColor : Color.secondary)
                 }
                 .buttonStyle(.plain)
 
                 // Comments indicator
-                Label("\(sequence.comments.count)", systemImage: "bubble.right")
+                Label("\(sequence.commentsCount)", systemImage: "bubble.right")
                     .foregroundStyle(.secondary)
             }
             .font(.caption)
@@ -713,7 +399,8 @@ struct CommunitySequenceCard: View {
 struct ShareSequenceView: View {
     @Environment(\.dismiss) private var dismiss
     let sequence: YogaSequence
-    let onShare: (SharedSequence) -> Void
+    var communityViewModel: CommunityViewModel
+    let onDone: () -> Void
 
     @State private var isSharing = false
     @State private var shareDescription = ""
@@ -778,28 +465,12 @@ struct ShareSequenceView: View {
 
     private func shareToCommmunity() {
         isSharing = true
-
-        // Simulate sharing to server
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Create shared sequence with description
-            var sharedSequence = sequence
-            if !shareDescription.isEmpty {
-                sharedSequence.description = shareDescription
+        Task {
+            try? await communityViewModel.shareSequence(sequence, description: shareDescription)
+            await MainActor.run {
+                isSharing = false
+                onDone()
             }
-
-            let newSharedSequence = SharedSequence(
-                id: UUID().uuidString,
-                sequence: sharedSequence,
-                authorName: "You",
-                authorId: "current-user",
-                sharedAt: Date(),
-                likes: 0,
-                saves: 0,
-                comments: []
-            )
-
-            isSharing = false
-            onShare(newSharedSequence)
         }
     }
 }
@@ -839,11 +510,7 @@ struct ShareSectionView: View {
                         ForEach(section.poses.prefix(5)) { poseEntry in
                             if let pose = poses.first(where: { $0.id == poseEntry.poseId }) {
                                 HStack(spacing: 8) {
-                                    Image(systemName: pose.imageURL)
-                                        .font(.caption)
-                                        .frame(width: 24, height: 24)
-                                        .background(Color(.systemGray5))
-                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    PoseImageView(imageURL: pose.imageURL, size: 24, cornerRadius: 4)
 
                                     Text(pose.nameEnglish)
                                         .font(.subheadline)
@@ -931,7 +598,8 @@ struct ShareSectionView: View {
 
 struct SharedSequenceDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var sharedSequence: SharedSequence
+    let sharedSequence: SharedSequence
+    var communityViewModel: CommunityViewModel
     let poses: [Pose]
     let isLiked: Bool
     let isSaved: Bool
@@ -947,6 +615,10 @@ struct SharedSequenceDetailView: View {
     @State private var newComment = ""
     @State private var replyingTo: SequenceComment?
     @State private var replyText = ""
+
+    private var comments: [SequenceComment] {
+        communityViewModel.commentsCache[sharedSequence.id] ?? []
+    }
 
     var body: some View {
         NavigationStack {
@@ -1032,6 +704,12 @@ struct SharedSequenceDetailView: View {
                     addReply(to: comment)
                 }
             }
+            .onAppear {
+                communityViewModel.loadComments(for: sharedSequence.id)
+            }
+            .onDisappear {
+                communityViewModel.unloadComments(for: sharedSequence.id)
+            }
         }
     }
 
@@ -1071,7 +749,7 @@ struct SharedSequenceDetailView: View {
                     Image(systemName: isLiked ? "heart.fill" : "heart")
                         .font(.title2)
                         .foregroundStyle(isLiked ? .red : .primary)
-                    Text("\(sharedSequence.likes)")
+                    Text("\(sharedSequence.likesCount)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1088,7 +766,7 @@ struct SharedSequenceDetailView: View {
                     Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
                         .font(.title2)
                         .foregroundStyle(isSaved ? Color.accentColor : Color.primary)
-                    Text("\(sharedSequence.saves)")
+                    Text("\(sharedSequence.savesCount)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1103,7 +781,7 @@ struct SharedSequenceDetailView: View {
             VStack(spacing: 4) {
                 Image(systemName: "bubble.right")
                     .font(.title2)
-                Text("\(sharedSequence.comments.count)")
+                Text("\(sharedSequence.commentsCount)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1149,7 +827,7 @@ struct SharedSequenceDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             // Comments list
-            if sharedSequence.comments.isEmpty {
+            if comments.isEmpty {
                 Text("No comments yet. Be the first to comment!")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -1158,7 +836,7 @@ struct SharedSequenceDetailView: View {
                     .background(Color(.systemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                ForEach(sharedSequence.comments) { comment in
+                ForEach(comments) { comment in
                     CommentCard(
                         comment: comment,
                         onReply: { replyingTo = comment }
@@ -1180,26 +858,13 @@ struct SharedSequenceDetailView: View {
     }
 
     private func addComment() {
-        let comment = SequenceComment(
-            authorId: "current-user",
-            authorName: "You",
-            content: newComment
-        )
-        sharedSequence.comments.insert(comment, at: 0)
-        userProfile.commentedSequenceIds.insert(sharedSequence.id)
+        communityViewModel.addComment(sequenceId: sharedSequence.id, content: newComment)
         newComment = ""
     }
 
     private func addReply(to comment: SequenceComment) {
         guard !replyText.isEmpty else { return }
-        let reply = SequenceComment(
-            authorId: "current-user",
-            authorName: "You",
-            content: replyText
-        )
-        if let index = sharedSequence.comments.firstIndex(where: { $0.id == comment.id }) {
-            sharedSequence.comments[index].replies.append(reply)
-        }
+        communityViewModel.addComment(sequenceId: sharedSequence.id, content: replyText, parentCommentId: comment.id)
         replyText = ""
         replyingTo = nil
     }
@@ -1355,11 +1020,7 @@ struct SharedSectionCard: View {
             ForEach(section.poses) { poseEntry in
                 if let pose = poses.first(where: { $0.id == poseEntry.poseId }) {
                     HStack(spacing: 12) {
-                        Image(systemName: pose.imageURL)
-                            .font(.title3)
-                            .frame(width: 36, height: 36)
-                            .background(Color(.systemGray5))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        PoseImageView(imageURL: pose.imageURL, size: 36, cornerRadius: 8)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pose.nameEnglish)
@@ -1405,13 +1066,13 @@ struct CommunityPostCard: View {
 
                 HStack(spacing: 8) {
                     Text("by \(post.authorName)")
-                    Text("•")
+                    Text("\u{2022}")
                     Text(post.createdAt, style: .relative)
 
                     Spacer()
 
-                    Label("\(post.likes)", systemImage: "heart")
-                    Label("\(post.replies.count)", systemImage: "bubble.right")
+                    Label("\(post.likesCount)", systemImage: "heart")
+                    Label("\(post.repliesCount)", systemImage: "bubble.right")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -1432,7 +1093,8 @@ struct CommunityPostCard: View {
 
 struct NewPostView: View {
     @Environment(\.dismiss) private var dismiss
-    let onPost: (CommunityPost) -> Void
+    var communityViewModel: CommunityViewModel
+    let onDone: () -> Void
 
     @State private var title = ""
     @State private var content = ""
@@ -1488,17 +1150,9 @@ struct NewPostView: View {
 
     private func submitPost() {
         isPosting = true
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            let post = CommunityPost(
-                authorId: "current-user",
-                authorName: "You",
-                title: title,
-                content: content
-            )
-            onPost(post)
-            isPosting = false
-        }
+        communityViewModel.createPost(title: title, content: content)
+        isPosting = false
+        onDone()
     }
 }
 
@@ -1506,12 +1160,17 @@ struct NewPostView: View {
 
 struct PostDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var post: CommunityPost
+    let post: CommunityPost
+    var communityViewModel: CommunityViewModel
     let onClose: () -> Void
     var userProfile: UserProfile
 
     @State private var newReply = ""
     @State private var isLiked = false
+
+    private var replies: [SequenceComment] {
+        communityViewModel.repliesCache[post.id] ?? []
+    }
 
     var body: some View {
         NavigationStack {
@@ -1531,7 +1190,7 @@ struct PostDetailView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            Text("•")
+                            Text("\u{2022}")
                                 .foregroundStyle(.secondary)
 
                             Text(post.createdAt, style: .relative)
@@ -1541,15 +1200,10 @@ struct PostDetailView: View {
 
                         // Like button
                         Button {
+                            communityViewModel.togglePostLike(postId: post.id, userProfile: userProfile)
                             isLiked.toggle()
-                            post.likes += isLiked ? 1 : -1
-                            if isLiked {
-                                userProfile.likedPostIds.insert(post.id)
-                            } else {
-                                userProfile.likedPostIds.remove(post.id)
-                            }
                         } label: {
-                            Label("\(post.likes)", systemImage: isLiked ? "heart.fill" : "heart")
+                            Label("\(post.likesCount)", systemImage: isLiked ? "heart.fill" : "heart")
                                 .font(.subheadline)
                                 .foregroundStyle(isLiked ? .red : .secondary)
                                 .padding(.horizontal, 12)
@@ -1564,7 +1218,7 @@ struct PostDetailView: View {
 
                     // Replies section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Replies (\(post.replies.count))")
+                        Text("Replies (\(replies.count))")
                             .font(.headline)
 
                         // Add reply field
@@ -1585,7 +1239,7 @@ struct PostDetailView: View {
                         .background(Color(.systemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                        if post.replies.isEmpty {
+                        if replies.isEmpty {
                             Text("No replies yet. Be the first to respond!")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
@@ -1594,7 +1248,7 @@ struct PostDetailView: View {
                                 .background(Color(.systemBackground))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
-                            ForEach(post.replies) { reply in
+                            ForEach(replies) { reply in
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack {
                                         Image(systemName: "person.circle.fill")
@@ -1638,17 +1292,16 @@ struct PostDetailView: View {
             }
             .onAppear {
                 isLiked = userProfile.likedPostIds.contains(post.id)
+                communityViewModel.loadReplies(for: post.id)
+            }
+            .onDisappear {
+                communityViewModel.unloadReplies(for: post.id)
             }
         }
     }
 
     private func addReply() {
-        let reply = SequenceComment(
-            authorId: "current-user",
-            authorName: "You",
-            content: newReply
-        )
-        post.replies.insert(reply, at: 0)
+        communityViewModel.addReply(postId: post.id, content: newReply)
         userProfile.commentedPostIds.insert(post.id)
         newReply = ""
     }
@@ -1658,7 +1311,7 @@ struct PostDetailView: View {
 
 struct AllDiscussionsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var posts: [CommunityPost]
+    let posts: [CommunityPost]
     let onSelectPost: (CommunityPost) -> Void
     let onNewPost: () -> Void
 
@@ -1895,5 +1548,5 @@ struct GroupSelectionRow: View {
 }
 
 #Preview {
-    CommunityView(sequenceViewModel: SequenceViewModel(), poses: MockPoseData.poses, userProfile: UserProfile.mock)
+    CommunityView(sequenceViewModel: SequenceViewModel(), communityViewModel: CommunityViewModel(), poses: [], userProfile: UserProfile())
 }

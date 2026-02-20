@@ -594,7 +594,7 @@ struct GuidedSequenceBuilderView: View {
             sections[2].poses = peakPoseEntries
         }
 
-        sequence = YogaSequence(sections: sections)
+        sequence = YogaSequence(sections: sections, group: groupName)
 
         // Initialize recommended poses for the first section
         updateRecommendedPoses()
@@ -709,11 +709,7 @@ struct PoseSelectionRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: pose.imageURL)
-                    .font(.title2)
-                    .frame(width: 44, height: 44)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                PoseImageView(imageURL: pose.imageURL, size: 44, cornerRadius: 8)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(pose.nameEnglish)
@@ -778,11 +774,7 @@ struct PoseRowInSection: View {
             // Tappable area for details
             Button(action: onTap) {
                 HStack(spacing: 12) {
-                    Image(systemName: pose.imageURL)
-                        .font(.title3)
-                        .frame(width: 40, height: 40)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    PoseImageView(imageURL: pose.imageURL, size: 40, cornerRadius: 8)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(pose.nameEnglish)
@@ -820,11 +812,7 @@ struct RecommendedPoseCard: View {
             // Tappable area for details
             Button(action: onTap) {
                 VStack(spacing: 8) {
-                    Image(systemName: pose.imageURL)
-                        .font(.title)
-                        .frame(width: 60, height: 60)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    PoseImageView(imageURL: pose.imageURL, size: 60, cornerRadius: 12)
 
                     Text(pose.nameEnglish)
                         .font(.caption)

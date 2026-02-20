@@ -11,6 +11,7 @@ struct SequenceEditorView: View {
     @Environment(\.dismiss) private var dismiss
     var viewModel: SequenceViewModel
     let poses: [Pose]
+    var communityViewModel: CommunityViewModel?
 
     @State var sequence: YogaSequence
     let isNew: Bool
@@ -39,7 +40,7 @@ struct SequenceEditorView: View {
 
                     ToolbarItem(placement: .primaryAction) {
                         HStack(spacing: 16) {
-                            if sequence.totalPoseCount > 0 {
+                            if sequence.totalPoseCount > 0, communityViewModel != nil {
                                 Button {
                                     showingShareSequence = true
                                 } label: {
@@ -76,8 +77,10 @@ struct SequenceEditorView: View {
                     }
                 }
                 .sheet(isPresented: $showingShareSequence) {
-                    ShareSequenceView(sequence: sequence) { _ in
-                        showingShareSequence = false
+                    if let communityViewModel {
+                        ShareSequenceView(sequence: sequence, communityViewModel: communityViewModel) {
+                            showingShareSequence = false
+                        }
                     }
                 }
         }

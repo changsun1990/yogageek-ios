@@ -14,6 +14,7 @@ extension String: @retroactive Identifiable {
 struct SequenceListView: View {
     var viewModel: SequenceViewModel
     let poses: [Pose]
+    var communityViewModel: CommunityViewModel
     @State private var showingNewGroup = false
     @State private var newGroupName = ""
     @State private var expandedGroups: Set<String> = []
@@ -181,20 +182,22 @@ struct SequenceListView: View {
                 NewSequenceOptionsView(
                     viewModel: viewModel,
                     poses: poses,
-                    groupName: groupName
+                    groupName: groupName,
+                    communityViewModel: communityViewModel
                 )
             }
             .sheet(item: $sequenceToEdit) { sequence in
                 SequenceEditorView(
                     viewModel: viewModel,
                     poses: poses,
+                    communityViewModel: communityViewModel,
                     sequence: sequence,
                     isNew: false
                 )
             }
             .sheet(isPresented: $showingShareSheet) {
                 if let sequence = sequenceToShare {
-                    ShareSequenceView(sequence: sequence) { _ in
+                    ShareSequenceView(sequence: sequence, communityViewModel: communityViewModel) {
                         showingShareSheet = false
                     }
                 }
@@ -204,5 +207,5 @@ struct SequenceListView: View {
 }
 
 #Preview {
-    SequenceListView(viewModel: SequenceViewModel(), poses: MockPoseData.poses)
+    SequenceListView(viewModel: SequenceViewModel(), poses: MockPoseData.poses, communityViewModel: CommunityViewModel())
 }

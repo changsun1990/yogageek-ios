@@ -12,6 +12,7 @@ struct CopyFromExistingView: View {
     var viewModel: SequenceViewModel
     let poses: [Pose]
     var groupName: String = "My Sequences"
+    var communityViewModel: CommunityViewModel?
     var onSave: (() -> Void)?
 
     @State private var selectedSections: [SelectedSection] = []
@@ -56,6 +57,7 @@ struct CopyFromExistingView: View {
                 SequenceEditorView(
                     viewModel: viewModel,
                     poses: poses,
+                    communityViewModel: communityViewModel,
                     sequence: createSequenceFromSelection(),
                     isNew: true,
                     onSave: {

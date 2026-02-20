@@ -8,220 +8,11 @@
 import SwiftUI
 import FirebaseAuth
 
-// MARK: - User Profile Model
-
-@Observable
-class UserProfile {
-    var id: String = UUID().uuidString
-    var displayName: String = ""
-    var bio: String = ""
-    var yogaExperienceLevel: YogaExperienceLevel = .beginner
-    var yearsOfPractice: Int = 0
-    var favoriteStyles: [YogaStyle] = []
-    var goals: [YogaGoal] = []
-    var preferredPracticeTimes: [PracticeTime] = []
-    var profileImageName: String = "person.circle.fill"
-    var joinedDate: Date = Date()
-    var sequencesCreated: Int = 0
-    var sequencesShared: Int = 0
-    var totalPracticeMinutes: Int = 0
-
-    // Community interaction tracking
-    var likedSequenceIds: Set<String> = [] {
-        didSet { saveCommunityData() }
-    }
-    var savedSequenceIds: Set<String> = [] {
-        didSet { saveCommunityData() }
-    }
-    var commentedSequenceIds: Set<String> = [] {
-        didSet { saveCommunityData() }
-    }
-    var likedPostIds: Set<String> = [] {
-        didSet { saveCommunityData() }
-    }
-    var commentedPostIds: Set<String> = [] {
-        didSet { saveCommunityData() }
-    }
-    var sharedSequences: [SharedSequence] = [] {
-        didSet { saveCommunityData() }
-    }
-
-    private let communityDataKey = "user_community_data"
-
-    init() {
-        loadCommunityData()
-    }
-
-    private func saveCommunityData() {
-        let data = CommunityData(
-            likedSequenceIds: Array(likedSequenceIds),
-            savedSequenceIds: Array(savedSequenceIds),
-            commentedSequenceIds: Array(commentedSequenceIds),
-            likedPostIds: Array(likedPostIds),
-            commentedPostIds: Array(commentedPostIds),
-            sharedSequences: sharedSequences
-        )
-        if let encoded = try? JSONEncoder().encode(data) {
-            UserDefaults.standard.set(encoded, forKey: communityDataKey)
-        }
-    }
-
-    private func loadCommunityData() {
-        guard let data = UserDefaults.standard.data(forKey: communityDataKey),
-              let decoded = try? JSONDecoder().decode(CommunityData.self, from: data) else {
-            return
-        }
-        likedSequenceIds = Set(decoded.likedSequenceIds)
-        savedSequenceIds = Set(decoded.savedSequenceIds)
-        commentedSequenceIds = Set(decoded.commentedSequenceIds)
-        likedPostIds = Set(decoded.likedPostIds)
-        commentedPostIds = Set(decoded.commentedPostIds)
-        sharedSequences = decoded.sharedSequences
-    }
-
-    static var mock: UserProfile {
-        let profile = UserProfile()
-        profile.displayName = "Yoga Enthusiast"
-        profile.bio = "Passionate about yoga and mindfulness. Love exploring new sequences and sharing with the community."
-        profile.yogaExperienceLevel = .intermediate
-        profile.yearsOfPractice = 3
-        profile.favoriteStyles = [.vinyasa, .hatha, .yin]
-        profile.goals = [.flexibility, .stressRelief, .strength]
-        profile.preferredPracticeTimes = [.morning, .evening]
-        profile.sequencesCreated = 5
-        profile.sequencesShared = 2
-        profile.totalPracticeMinutes = 1250
-        return profile
-    }
-}
-
-// Helper struct for encoding/decoding community data
-private struct CommunityData: Codable {
-    let likedSequenceIds: [String]
-    let savedSequenceIds: [String]
-    let commentedSequenceIds: [String]
-    let likedPostIds: [String]
-    let commentedPostIds: [String]
-    let sharedSequences: [SharedSequence]
-}
-
-enum YogaExperienceLevel: String, CaseIterable, Identifiable {
-    case beginner = "Beginner"
-    case intermediate = "Intermediate"
-    case advanced = "Advanced"
-    case expert = "Expert"
-
-    var id: String { rawValue }
-
-    var description: String {
-        switch self {
-        case .beginner: return "New to yoga, learning the basics"
-        case .intermediate: return "Comfortable with common poses"
-        case .advanced: return "Experienced with challenging poses"
-        case .expert: return "Teaching-level expertise"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .beginner: return "leaf"
-        case .intermediate: return "leaf.fill"
-        case .advanced: return "star"
-        case .expert: return "star.fill"
-        }
-    }
-}
-
-enum YogaStyle: String, CaseIterable, Identifiable {
-    case vinyasa = "Vinyasa"
-    case hatha = "Hatha"
-    case ashtanga = "Ashtanga"
-    case yin = "Yin"
-    case restorative = "Restorative"
-    case power = "Power"
-    case bikram = "Bikram"
-    case kundalini = "Kundalini"
-    case iyengar = "Iyengar"
-
-    var id: String { rawValue }
-
-    var icon: String {
-        switch self {
-        case .vinyasa: return "wind"
-        case .hatha: return "sun.max"
-        case .ashtanga: return "flame"
-        case .yin: return "moon"
-        case .restorative: return "leaf"
-        case .power: return "bolt"
-        case .bikram: return "thermometer.sun"
-        case .kundalini: return "sparkles"
-        case .iyengar: return "ruler"
-        }
-    }
-}
-
-enum YogaGoal: String, CaseIterable, Identifiable {
-    case flexibility = "Flexibility"
-    case strength = "Strength"
-    case balance = "Balance"
-    case stressRelief = "Stress Relief"
-    case mindfulness = "Mindfulness"
-    case weightLoss = "Weight Loss"
-    case betterSleep = "Better Sleep"
-    case painRelief = "Pain Relief"
-    case energy = "Energy"
-
-    var id: String { rawValue }
-
-    var icon: String {
-        switch self {
-        case .flexibility: return "figure.flexibility"
-        case .strength: return "figure.strengthtraining.traditional"
-        case .balance: return "figure.stand"
-        case .stressRelief: return "brain.head.profile"
-        case .mindfulness: return "heart.circle"
-        case .weightLoss: return "figure.run"
-        case .betterSleep: return "moon.zzz"
-        case .painRelief: return "bandage"
-        case .energy: return "bolt.heart"
-        }
-    }
-}
-
-enum PracticeTime: String, CaseIterable, Identifiable {
-    case earlyMorning = "Early Morning"
-    case morning = "Morning"
-    case afternoon = "Afternoon"
-    case evening = "Evening"
-    case night = "Night"
-
-    var id: String { rawValue }
-
-    var timeRange: String {
-        switch self {
-        case .earlyMorning: return "5-7 AM"
-        case .morning: return "7-10 AM"
-        case .afternoon: return "12-5 PM"
-        case .evening: return "5-8 PM"
-        case .night: return "8-11 PM"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .earlyMorning: return "sunrise"
-        case .morning: return "sun.horizon"
-        case .afternoon: return "sun.max"
-        case .evening: return "sunset"
-        case .night: return "moon.stars"
-        }
-    }
-}
-
 // MARK: - Profile View
 
 struct ProfileView: View {
     @Bindable var userProfile: UserProfile
+    var communityViewModel: CommunityViewModel?
     var sequenceViewModel: SequenceViewModel?
     var authViewModel: AuthViewModel?
     var onNavigateToSequences: (() -> Void)?
@@ -239,6 +30,11 @@ struct ProfileView: View {
     enum ActivityTab: String, CaseIterable {
         case sequences = "Sequences"
         case discussions = "Discussions"
+    }
+
+    private var mySharedSequences: [SharedSequence] {
+        guard let userId = authViewModel?.currentUser?.uid else { return [] }
+        return communityViewModel?.sharedSequences.filter { $0.authorId == userId } ?? []
     }
 
     var body: some View {
@@ -302,14 +98,15 @@ struct ProfileView: View {
                 Text("Are you sure you want to sign out?")
             }
             .sheet(isPresented: $showingEditProfile) {
-                EditProfileView(userProfile: userProfile)
+                EditProfileView(userProfile: userProfile, authViewModel: authViewModel)
             }
             .sheet(isPresented: $showingLikedSequences) {
                 ActivityDetailView(
                     title: "Liked Sequences",
                     icon: "heart.fill",
                     iconColor: .red,
-                    sequenceIds: userProfile.likedSequenceIds
+                    sequenceIds: userProfile.likedSequenceIds,
+                    allSequences: communityViewModel?.sharedSequences ?? []
                 )
             }
             .sheet(isPresented: $showingSavedSequences) {
@@ -317,7 +114,8 @@ struct ProfileView: View {
                     title: "Saved Sequences",
                     icon: "bookmark.fill",
                     iconColor: Color.accentColor,
-                    sequenceIds: userProfile.savedSequenceIds
+                    sequenceIds: userProfile.savedSequenceIds,
+                    allSequences: communityViewModel?.sharedSequences ?? []
                 )
             }
             .sheet(isPresented: $showingCommentedSequences) {
@@ -325,7 +123,8 @@ struct ProfileView: View {
                     title: "Commented Sequences",
                     icon: "bubble.right.fill",
                     iconColor: .green,
-                    sequenceIds: userProfile.commentedSequenceIds
+                    sequenceIds: userProfile.commentedSequenceIds,
+                    allSequences: communityViewModel?.sharedSequences ?? []
                 )
             }
             .sheet(isPresented: $showingLikedDiscussions) {
@@ -333,7 +132,8 @@ struct ProfileView: View {
                     title: "Liked Discussions",
                     icon: "heart.fill",
                     iconColor: .red,
-                    postIds: userProfile.likedPostIds
+                    postIds: userProfile.likedPostIds,
+                    allPosts: communityViewModel?.posts ?? []
                 )
             }
             .sheet(isPresented: $showingCommentedDiscussions) {
@@ -341,11 +141,12 @@ struct ProfileView: View {
                     title: "Commented Discussions",
                     icon: "bubble.right.fill",
                     iconColor: .green,
-                    postIds: userProfile.commentedPostIds
+                    postIds: userProfile.commentedPostIds,
+                    allPosts: communityViewModel?.posts ?? []
                 )
             }
             .sheet(isPresented: $showingSharedSequences) {
-                SharedSequencesDetailView(sharedSequences: userProfile.sharedSequences)
+                SharedSequencesDetailView(sharedSequences: mySharedSequences)
             }
         }
     }
@@ -415,7 +216,7 @@ struct ProfileView: View {
             } label: {
                 StatCard(
                     icon: "square.and.arrow.up.fill",
-                    value: "\(userProfile.sharedSequences.count)",
+                    value: "\(mySharedSequences.count)",
                     label: "Shared"
                 )
             }
@@ -753,10 +554,10 @@ struct ActivityDetailView: View {
     let icon: String
     let iconColor: Color
     let sequenceIds: Set<String>
+    let allSequences: [SharedSequence]
 
-    // Get sequences from mock data that match the IDs
     private var filteredSequences: [SharedSequence] {
-        SharedSequence.mockData.filter { sequenceIds.contains($0.id) }
+        allSequences.filter { sequenceIds.contains($0.id) }
     }
 
     var body: some View {
@@ -824,10 +625,10 @@ struct ActivitySequenceCard: View {
 
                 Spacer()
 
-                Label("\(sequence.likes)", systemImage: "heart.fill")
+                Label("\(sequence.likesCount)", systemImage: "heart.fill")
                     .foregroundStyle(.red)
 
-                Label("\(sequence.saves)", systemImage: "bookmark.fill")
+                Label("\(sequence.savesCount)", systemImage: "bookmark.fill")
                     .foregroundStyle(Color.accentColor)
             }
             .font(.caption)
@@ -847,10 +648,10 @@ struct DiscussionActivityDetailView: View {
     let icon: String
     let iconColor: Color
     let postIds: Set<String>
+    let allPosts: [CommunityPost]
 
-    // Get posts from mock data that match the IDs
     private var filteredPosts: [CommunityPost] {
-        CommunityPost.mockData.filter { postIds.contains($0.id) }
+        allPosts.filter { postIds.contains($0.id) }
     }
 
     var body: some View {
@@ -902,13 +703,13 @@ struct ActivityPostCard: View {
 
             HStack(spacing: 8) {
                 Text("by \(post.authorName)")
-                Text("•")
+                Text("\u{2022}")
                 Text(post.createdAt, style: .relative)
 
                 Spacer()
 
-                Label("\(post.likes)", systemImage: "heart")
-                Label("\(post.replies.count)", systemImage: "bubble.right")
+                Label("\(post.likesCount)", systemImage: "heart")
+                Label("\(post.repliesCount)", systemImage: "bubble.right")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -1007,6 +808,7 @@ struct FlowLayout: Layout {
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
     var userProfile: UserProfile
+    var authViewModel: AuthViewModel?
 
     @State private var editedName: String = ""
     @State private var editedBio: String = ""
@@ -1141,6 +943,14 @@ struct EditProfileView: View {
         userProfile.favoriteStyles = Array(editedStyles)
         userProfile.goals = Array(editedGoals)
         userProfile.preferredPracticeTimes = Array(editedTimes)
+
+        // Save to Firestore
+        if let userId = authViewModel?.currentUser?.uid {
+            Task {
+                try? await UserService.shared.saveProfile(userProfile, userId: userId)
+            }
+        }
+
         dismiss()
     }
 
@@ -1170,5 +980,5 @@ struct EditProfileView: View {
 }
 
 #Preview {
-    ProfileView(userProfile: UserProfile.mock)
+    ProfileView(userProfile: UserProfile())
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 enum AppTab: String, CaseIterable {
     case explore = "Explore"
@@ -18,8 +19,10 @@ struct MainTabView: View {
     var authViewModel: AuthViewModel?
     @State private var poseViewModel = PoseViewModel()
     @State private var sequenceViewModel = SequenceViewModel()
-    @State private var userProfile = UserProfile.mock
+    @State private var communityViewModel = CommunityViewModel()
+    @State private var userProfile = UserProfile()
     @State private var selectedTab: AppTab = .explore
+    @State private var hasStartedListeners = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -28,17 +31,69 @@ struct MainTabView: View {
             }
 
             Tab("My Sequences", systemImage: "list.bullet.rectangle", value: .mySequences) {
-                SequenceListView(viewModel: sequenceViewModel, poses: poseViewModel.poses)
+                SequenceListView(viewModel: sequenceViewModel, poses: poseViewModel.poses, communityViewModel: communityViewModel)
             }
 
             Tab("Community", systemImage: "person.3", value: .community) {
-                CommunityView(sequenceViewModel: sequenceViewModel, poses: poseViewModel.poses, userProfile: userProfile)
+                CommunityView(
+                    sequenceViewModel: sequenceViewModel,
+                    communityViewModel: communityViewModel,
+                    poses: poseViewModel.poses,
+                    userProfile: userProfile
+                )
             }
 
             Tab("Profile", systemImage: "person.circle", value: .profile) {
-                ProfileView(userProfile: userProfile, sequenceViewModel: sequenceViewModel, authViewModel: authViewModel, onNavigateToSequences: {
-                    selectedTab = .mySequences
-                })
+                ProfileView(
+                    userProfile: userProfile,
+                    communityViewModel: communityViewModel,
+                    sequenceViewModel: sequenceViewModel,
+                    authViewModel: authViewModel,
+                    onNavigateToSequences: {
+                        selectedTab = .mySequences
+                    }
+                )
+            }
+        }
+        .task {
+            await setupListeners()
+        }
+    }
+
+    private func setupListeners() async {
+        guard !hasStartedListeners,
+              let user = authViewModel?.currentUser else { return }
+        hasStartedListeners = true
+
+        let userId = user.uid
+        let displayName = user.displayName ?? "Yoga Practitioner"
+
+        // Run migration if needed
+        do {
+            try await MigrationService.shared.migrateIfNeeded(userId: userId)
+        } catch {
+            print("[MainTabView] Migration failed: \(error)")
+        }
+
+        // Start all listeners
+        sequenceViewModel.startListening(userId: userId)
+        communityViewModel.startListening(userId: userId, userName: displayName)
+
+        UserService.shared.startListening(userId: userId) { profile in
+            Task { @MainActor in
+                if let profile {
+                    userProfile.update(from: profile)
+                } else {
+                    // First sign-in: save initial profile
+                    let newProfile = UserProfile()
+                    newProfile.id = userId
+                    newProfile.displayName = displayName
+                    do {
+                        try await UserService.shared.saveProfile(newProfile, userId: userId)
+                    } catch {
+                        print("[MainTabView] Save initial profile failed: \(error)")
+                    }
+                }
             }
         }
     }

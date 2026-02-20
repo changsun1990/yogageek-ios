@@ -20,6 +20,7 @@ struct NewSequenceOptionsView: View {
     var viewModel: SequenceViewModel
     let poses: [Pose]
     var groupName: String = "My Sequences"
+    var communityViewModel: CommunityViewModel?
 
     @State private var selectedOption: SequenceCreationOption?
     @State private var shouldDismissAfterSave = false
@@ -96,6 +97,7 @@ struct NewSequenceOptionsView: View {
                     SequenceEditorView(
                         viewModel: viewModel,
                         poses: poses,
+                        communityViewModel: communityViewModel,
                         sequence: viewModel.createNewSequence(inGroup: groupName),
                         isNew: true,
                         onSave: {
@@ -107,6 +109,7 @@ struct NewSequenceOptionsView: View {
                         viewModel: viewModel,
                         poses: poses,
                         groupName: groupName,
+                        communityViewModel: communityViewModel,
                         onSave: {
                             shouldDismissAfterSave = true
                         }

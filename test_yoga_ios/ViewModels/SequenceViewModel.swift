@@ -13,8 +13,7 @@ class SequenceViewModel {
     var sequences: [YogaSequence] = []
     var groups: [String] = []
 
-    private let storageKey = "yoga_sequences"
-    private let groupsStorageKey = "yoga_groups"
+    private var userId: String?
 
     var allGroups: [String] {
         // Combine saved groups with groups from sequences
@@ -23,79 +22,80 @@ class SequenceViewModel {
         return allGroupsSet.sorted()
     }
 
-    init() {
-        loadGroups()
-        loadSequences()
+    init() {}
+
+    // MARK: - Listening
+
+    func startListening(userId: String) {
+        self.userId = userId
+
+        SequenceService.shared.startListeningToUserSequences(userId: userId) { [weak self] sequences in
+            Task { @MainActor in
+                self?.sequences = sequences
+            }
+        }
+
+        SequenceService.shared.startListeningToGroups(userId: userId) { [weak self] groups in
+            Task { @MainActor in
+                self?.groups = groups
+            }
+        }
+    }
+
+    func stopListening() {
+        SequenceService.shared.stopListeningToUserSequences()
+        SequenceService.shared.stopListeningToGroups()
+        sequences = []
+        groups = []
+        userId = nil
     }
 
     // MARK: - Group Management
 
-    func loadGroups() {
-        guard let data = UserDefaults.standard.data(forKey: groupsStorageKey),
-              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
-            groups = []
-            return
-        }
-        groups = decoded
-    }
-
-    func saveGroups() {
-        guard let encoded = try? JSONEncoder().encode(groups) else { return }
-        UserDefaults.standard.set(encoded, forKey: groupsStorageKey)
-    }
-
     func addGroup(_ name: String) {
-        guard !name.isEmpty, !groups.contains(name) else { return }
-        groups.append(name)
-        saveGroups()
+        guard let userId, !name.isEmpty, !groups.contains(name) else { return }
+        Task {
+            do {
+                try await SequenceService.shared.addGroup(name, userId: userId)
+            } catch {
+                print("[SequenceVM] addGroup failed: \(error)")
+            }
+        }
     }
 
     func deleteGroup(_ name: String) {
-        // Delete all sequences in the group
-        sequences.removeAll { $0.group == name }
-        saveSequences()
-
-        // Remove the group
-        groups.removeAll { $0 == name }
-        saveGroups()
-    }
-
-    func loadSequences() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let decoded = try? JSONDecoder().decode([YogaSequence].self, from: data) else {
-            sequences = []
-            return
+        guard let userId else { return }
+        Task {
+            try? await SequenceService.shared.deleteGroup(name, userId: userId)
         }
-        sequences = decoded.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    func saveSequences() {
-        guard let encoded = try? JSONEncoder().encode(sequences) else { return }
-        UserDefaults.standard.set(encoded, forKey: storageKey)
-    }
+    // MARK: - Sequence Management
 
     func addSequence(_ sequence: YogaSequence) {
-        sequences.insert(sequence, at: 0)
-        saveSequences()
+        guard let userId else { return }
+        Task {
+            try? await SequenceService.shared.addSequence(sequence, userId: userId)
+        }
     }
 
     func updateSequence(_ sequence: YogaSequence) {
-        if let index = sequences.firstIndex(where: { $0.id == sequence.id }) {
-            var updated = sequence
-            updated.updatedAt = Date()
-            sequences[index] = updated
-            saveSequences()
+        guard let userId else { return }
+        Task {
+            try? await SequenceService.shared.updateSequence(sequence, userId: userId)
         }
     }
 
     func deleteSequence(_ sequence: YogaSequence) {
-        sequences.removeAll { $0.id == sequence.id }
-        saveSequences()
+        Task {
+            try? await SequenceService.shared.deleteSequence(sequence.id)
+        }
     }
 
     func deleteSequence(at offsets: IndexSet) {
-        sequences.remove(atOffsets: offsets)
-        saveSequences()
+        for index in offsets {
+            deleteSequence(sequences[index])
+        }
     }
 
     func createNewSequence(inGroup group: String = "My Sequences") -> YogaSequence {
