@@ -178,16 +178,6 @@ struct PoseDetailSheet: View {
 
                     Divider()
 
-                    // Description
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Description")
-                            .font(.headline)
-
-                        Text(pose.description)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-
                     // Benefits
                     if !pose.benefit.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -200,6 +190,38 @@ struct PoseDetailSheet: View {
                         }
                     }
 
+                    // Muscle Groups
+                    if !pose.muscleGroup.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Muscle Groups")
+                                .font(.headline)
+
+                            Text(pose.muscleGroup)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    // Mechanics
+                    if !pose.mechanics.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Mechanics")
+                                .font(.headline)
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                if !pose.mechanics.alignmentPrinciple.isEmpty {
+                                    MechanicsRow(title: "Alignment Principle", content: pose.mechanics.alignmentPrinciple, icon: "arrow.up.and.down.and.arrow.left.and.right")
+                                }
+                                if !pose.mechanics.keyEngagement.isEmpty {
+                                    MechanicsRow(title: "Key Engagement", content: pose.mechanics.keyEngagement, icon: "figure.strengthtraining.functional")
+                                }
+                                if !pose.mechanics.commonCorrection.isEmpty {
+                                    MechanicsRow(title: "Common Correction", content: pose.mechanics.commonCorrection, icon: "exclamationmark.triangle")
+                                }
+                            }
+                        }
+                    }
+
                     // Sample Cues
                     if !pose.sampleCues.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -207,7 +229,7 @@ struct PoseDetailSheet: View {
                                 .font(.headline)
 
                             VStack(alignment: .leading, spacing: 8) {
-                                ForEach(Array(pose.sampleCues.prefix(5).enumerated()), id: \.offset) { index, cue in
+                                ForEach(Array(pose.sampleCues.enumerated()), id: \.offset) { index, cue in
                                     HStack(alignment: .top, spacing: 12) {
                                         Text("\(index + 1)")
                                             .font(.caption2)
@@ -218,6 +240,28 @@ struct PoseDetailSheet: View {
                                             .clipShape(Circle())
 
                                         Text(cue)
+                                            .font(.subheadline)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Variations
+                    if !pose.variations.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Variations")
+                                .font(.headline)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(pose.variations, id: \.self) { variation in
+                                    HStack(alignment: .top, spacing: 12) {
+                                        Image(systemName: "circle.fill")
+                                            .font(.system(size: 6))
+                                            .foregroundStyle(Color.accentColor)
+                                            .padding(.top, 6)
+
+                                        Text(variation)
                                             .font(.subheadline)
                                     }
                                 }
