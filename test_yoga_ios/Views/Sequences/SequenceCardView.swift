@@ -13,7 +13,7 @@ struct SequenceCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(sequence.name.isEmpty ? "Untitled Sequence" : sequence.name)
-                .font(.headline)
+                .font(.yogaHeadline())
                 .lineLimit(1)
 
             if !sequence.description.isEmpty {

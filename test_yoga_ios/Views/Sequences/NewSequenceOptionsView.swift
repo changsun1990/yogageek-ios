@@ -132,9 +132,9 @@ struct OptionCard: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.title)
-                    .foregroundStyle(isComingSoon ? Color.secondary : Color.accentColor)
+                    .foregroundStyle(isComingSoon ? Color.secondary : Color.yogaPrimary)
                     .frame(width: 50, height: 50)
-                    .background(isComingSoon ? Color(.systemGray5) : Color.accentColor.opacity(0.1))
+                    .background(isComingSoon ? Color(.systemGray5) : Color.yogaPrimary.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -170,7 +170,7 @@ struct OptionCard: View {
                 }
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)

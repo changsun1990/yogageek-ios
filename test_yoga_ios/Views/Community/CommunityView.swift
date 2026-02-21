@@ -137,7 +137,7 @@ struct CommunityView: View {
     private var shareSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Share Your Sequences")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             Text("Share your yoga sequences with the community")
                 .font(.subheadline)
@@ -154,7 +154,7 @@ struct CommunityView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -162,7 +162,7 @@ struct CommunityView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Discussions")
-                    .font(.headline)
+                    .font(.yogaHeadline())
 
                 if !communityViewModel.posts.isEmpty {
                     Text("(\(communityViewModel.posts.count))")
@@ -189,7 +189,7 @@ struct CommunityView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 LazyVStack(spacing: 12) {
@@ -221,7 +221,7 @@ struct CommunityView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Community Sequences")
-                    .font(.headline)
+                    .font(.yogaHeadline())
 
                 if !communityViewModel.sharedSequences.isEmpty {
                     Text("(\(communityViewModel.sharedSequences.count))")
@@ -307,7 +307,7 @@ struct ShareableSequenceCard: View {
                     .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
-                    .background(Color.accentColor)
+                    .background(Color.yogaPrimary)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
@@ -333,7 +333,7 @@ struct CommunitySequenceCard: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(sequence.sequence.name)
-                            .font(.headline)
+                            .font(.yogaHeadline())
                             .foregroundStyle(.primary)
 
                         Text("by \(sequence.authorName)")
@@ -373,7 +373,7 @@ struct CommunitySequenceCard: View {
                 // Save button
                 Button(action: onSave) {
                     Label("\(sequence.savesCount)", systemImage: isSaved ? "bookmark.fill" : "bookmark")
-                        .foregroundStyle(isSaved ? Color.accentColor : Color.secondary)
+                        .foregroundStyle(isSaved ? Color.yogaPrimary : Color.secondary)
                 }
                 .buttonStyle(.plain)
 
@@ -385,12 +385,9 @@ struct CommunitySequenceCard: View {
             .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.systemGray4), lineWidth: 1)
-        )
+        .yogaCardShadow()
     }
 }
 
@@ -411,7 +408,7 @@ struct ShareSequenceView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(sequence.name)
-                            .font(.headline)
+                            .font(.yogaHeadline())
 
                         HStack {
                             Label("\(sequence.sections.count) sections", systemImage: "rectangle.stack")
@@ -492,7 +489,7 @@ struct ShareSectionView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(section.name.isEmpty ? "Untitled Section" : section.name)
-                            .font(.headline)
+                            .font(.yogaHeadline())
 
                         HStack {
                             Label("\(section.poses.count) poses", systemImage: "figure.yoga")
@@ -638,7 +635,7 @@ struct SharedSequenceDetailView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("Sequence Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -667,10 +664,10 @@ struct SharedSequenceDetailView: View {
                     showingSaveDialog = true
                 } label: {
                     Label("Save to My Sequences", systemImage: "square.and.arrow.down")
-                        .font(.headline)
+                        .font(.yogaHeadline())
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color.yogaPrimary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -716,8 +713,7 @@ struct SharedSequenceDetailView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(sharedSequence.sequence.name)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.yogaTitle(22))
 
             Text("by \(sharedSequence.authorName)")
                 .font(.subheadline)
@@ -737,7 +733,7 @@ struct SharedSequenceDetailView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -755,7 +751,7 @@ struct SharedSequenceDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
@@ -765,14 +761,14 @@ struct SharedSequenceDetailView: View {
                 VStack(spacing: 4) {
                     Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
                         .font(.title2)
-                        .foregroundStyle(isSaved ? Color.accentColor : Color.primary)
+                        .foregroundStyle(isSaved ? Color.yogaPrimary : Color.primary)
                     Text("\(sharedSequence.savesCount)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
@@ -787,7 +783,7 @@ struct SharedSequenceDetailView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -795,7 +791,7 @@ struct SharedSequenceDetailView: View {
     private var sectionsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Sections")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             ForEach(sharedSequence.sequence.sections) { section in
                 SharedSectionCard(section: section, poses: poses)
@@ -806,7 +802,7 @@ struct SharedSequenceDetailView: View {
     private var commentsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Comments")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             // Add comment field
             HStack(spacing: 12) {
@@ -818,12 +814,12 @@ struct SharedSequenceDetailView: View {
                     addComment()
                 } label: {
                     Image(systemName: "paperplane.fill")
-                        .foregroundStyle(newComment.isEmpty ? Color.secondary : Color.accentColor)
+                        .foregroundStyle(newComment.isEmpty ? Color.secondary : Color.yogaPrimary)
                 }
                 .disabled(newComment.isEmpty)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             // Comments list
@@ -833,7 +829,7 @@ struct SharedSequenceDetailView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 ForEach(comments) { comment in
@@ -900,7 +896,7 @@ struct CommentCard: View {
                     Button(action: onReply) {
                         Text("Reply")
                             .font(.caption)
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.yogaPrimary)
                     }
                 }
 
@@ -938,7 +934,7 @@ struct CommentCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -1038,7 +1034,7 @@ struct SharedSectionCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -1078,12 +1074,9 @@ struct CommunityPostCard: View {
                 .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
+            .yogaCardShadow()
         }
         .buttonStyle(.plain)
     }
@@ -1213,13 +1206,13 @@ struct PostDetailView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     // Replies section
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Replies (\(replies.count))")
-                            .font(.headline)
+                            .font(.yogaHeadline())
 
                         // Add reply field
                         HStack(spacing: 12) {
@@ -1231,12 +1224,12 @@ struct PostDetailView: View {
                                 addReply()
                             } label: {
                                 Image(systemName: "paperplane.fill")
-                                    .foregroundStyle(newReply.isEmpty ? Color.secondary : Color.accentColor)
+                                    .foregroundStyle(newReply.isEmpty ? Color.secondary : Color.yogaPrimary)
                             }
                             .disabled(newReply.isEmpty)
                         }
                         .padding()
-                        .background(Color(.systemBackground))
+                        .background(Color.yogaCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
 
                         if replies.isEmpty {
@@ -1245,7 +1238,7 @@ struct PostDetailView: View {
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color(.systemBackground))
+                                .background(Color.yogaCardBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             ForEach(replies) { reply in
@@ -1272,7 +1265,7 @@ struct PostDetailView: View {
                                         .font(.subheadline)
                                 }
                                 .padding()
-                                .background(Color(.systemBackground))
+                                .background(Color.yogaCardBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                         }
@@ -1280,7 +1273,7 @@ struct PostDetailView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("Discussion")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1327,7 +1320,7 @@ struct AllDiscussionsView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("All Discussions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1376,7 +1369,7 @@ struct AllSequencesView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("All Sequences")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1410,10 +1403,10 @@ struct SaveToGroupSheet: View {
                 VStack(spacing: 8) {
                     Image(systemName: "square.and.arrow.down")
                         .font(.largeTitle)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
 
                     Text("Save to My Sequences")
-                        .font(.headline)
+                        .font(.yogaHeadline())
 
                     Text("\"\(sequenceName)\"")
                         .font(.subheadline)
@@ -1453,9 +1446,9 @@ struct SaveToGroupSheet: View {
                                 } label: {
                                     HStack {
                                         Image(systemName: "plus.circle.fill")
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(Color.yogaPrimary)
                                         Text("Create New Group")
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(Color.yogaPrimary)
                                         Spacer()
                                     }
                                     .padding()
@@ -1477,10 +1470,10 @@ struct SaveToGroupSheet: View {
                     onSave()
                 } label: {
                     Text("Save")
-                        .font(.headline)
+                        .font(.yogaHeadline())
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color.yogaPrimary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -1523,7 +1516,7 @@ struct GroupSelectionRow: View {
         Button(action: onTap) {
             HStack {
                 Image(systemName: "folder.fill")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.yogaPrimary : .secondary)
 
                 Text(groupName)
                     .foregroundStyle(.primary)
@@ -1532,15 +1525,15 @@ struct GroupSelectionRow: View {
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
                 }
             }
             .padding()
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+            .background(isSelected ? Color.yogaPrimary.opacity(0.1) : Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.yogaPrimary : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

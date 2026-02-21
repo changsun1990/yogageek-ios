@@ -38,7 +38,7 @@ struct ExploreView: View {
                     }
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .yogaScreenBackground()
             .refreshable {
                 poseViewModel.refresh()
             }
@@ -120,7 +120,7 @@ struct ExploreView: View {
             .padding(.vertical, 10)
         }
         .frame(minHeight: 44)
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 
     private var loadingView: some View {
@@ -148,7 +148,7 @@ struct FilterChip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(isActive ? Color.accentColor : Color.gray.opacity(0.2))
+        .background(isActive ? Color.yogaPrimary : Color.gray.opacity(0.15))
         .foregroundColor(isActive ? .white : .primary)
         .clipShape(Capsule())
     }

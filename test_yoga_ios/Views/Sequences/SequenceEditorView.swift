@@ -28,7 +28,7 @@ struct SequenceEditorView: View {
     var body: some View {
         NavigationStack {
             editorContent
-                .background(Color(.systemGroupedBackground))
+                .yogaScreenBackground()
                 .navigationTitle(isNew ? "New Sequence" : "Edit Sequence")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -109,7 +109,7 @@ struct SequenceEditorView: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -132,7 +132,7 @@ struct SequenceEditorView: View {
             )
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -180,7 +180,7 @@ struct SequenceEditorView: View {
                 }
             } label: {
                 Label("Add Section", systemImage: "plus.circle.fill")
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color(.systemGray6))
@@ -196,10 +196,10 @@ struct SequenceEditorView: View {
                 showingPractice = true
             } label: {
                 Label("Start Practice", systemImage: "play.fill")
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color.yogaPrimary)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
@@ -246,7 +246,7 @@ struct SummaryItem: View {
                 .foregroundStyle(.tint)
 
             Text(value)
-                .font(.headline)
+                .font(.yogaHeadline())
 
             Text(label)
                 .font(.caption)

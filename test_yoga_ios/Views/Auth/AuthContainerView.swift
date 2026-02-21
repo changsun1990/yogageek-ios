@@ -42,11 +42,10 @@ struct LoginView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "figure.yoga")
                         .font(.system(size: 80))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
 
                     Text("Welcome Back")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.yogaTitle(34))
 
                     Text("Sign in to continue your yoga journey")
                         .font(.subheadline)
@@ -121,7 +120,7 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color.yogaPrimary)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -213,11 +212,10 @@ struct SignUpView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "figure.yoga")
                         .font(.system(size: 80))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
 
                     Text("Create Account")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.yogaTitle(34))
 
                     Text("Start your yoga journey today")
                         .font(.subheadline)
@@ -320,7 +318,7 @@ struct SignUpView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isFormValid ? Color.accentColor : Color.gray)
+                    .background(isFormValid ? Color.yogaPrimary : Color.gray)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }

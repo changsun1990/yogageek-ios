@@ -39,7 +39,7 @@ struct SectionEditorView: View {
 
                 // Section name
                 TextField("Section Name", text: $section.name)
-                    .font(.headline)
+                    .font(.yogaHeadline())
 
                 Spacer()
 
@@ -174,7 +174,7 @@ struct SectionEditorView: View {
                         }
                     }
                 }
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -265,7 +265,7 @@ struct PoseRowView: View {
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .fill(Color.accentColor.opacity(0.85))
+                                .fill(Color.yogaPrimary.opacity(0.85))
                         )
                 }
 
@@ -277,7 +277,7 @@ struct PoseRowView: View {
                 } label: {
                     Image(systemName: isExpanded ? "minus.circle.fill" : "plus.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(isExpanded ? Color.orange : Color.accentColor)
+                        .foregroundStyle(isExpanded ? Color.orange : Color.yogaPrimary)
                         .symbolRenderingMode(.hierarchical)
                 }
                 .buttonStyle(.plain)
@@ -395,7 +395,7 @@ struct PoseRowView: View {
                 ))
             }
         }
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 }
 

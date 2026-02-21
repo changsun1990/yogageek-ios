@@ -49,11 +49,11 @@ struct SequenceListView: View {
                                     HStack(spacing: 12) {
                                         Image(systemName: expandedGroups.contains(group) ? "folder.fill" : "folder")
                                             .font(.title2)
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(Color.yogaPrimary)
 
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(group)
-                                                .font(.headline)
+                                                .font(.yogaHeadline())
                                                 .foregroundStyle(.primary)
 
                                             let count = viewModel.sequences.filter { $0.group == group }.count
@@ -138,9 +138,9 @@ struct SequenceListView: View {
                                     } label: {
                                         HStack {
                                             Image(systemName: "plus.circle.fill")
-                                                .foregroundStyle(Color.accentColor)
+                                                .foregroundStyle(Color.yogaPrimary)
                                             Text("Add Sequence")
-                                                .foregroundStyle(Color.accentColor)
+                                                .foregroundStyle(Color.yogaPrimary)
                                         }
                                         .padding(.leading, 20)
                                         .padding(.vertical, 8)

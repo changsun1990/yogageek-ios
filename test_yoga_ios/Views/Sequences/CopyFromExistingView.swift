@@ -35,7 +35,7 @@ struct CopyFromExistingView: View {
                     selectionView
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("Copy Sections")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -143,14 +143,14 @@ struct CopyFromExistingView: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.1))
+                        .background(Color.yogaPrimary.opacity(0.1))
                         .clipShape(Capsule())
                     }
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 
     private func createSequenceFromSelection() -> YogaSequence {
@@ -198,7 +198,7 @@ struct ExistingSequenceCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(sequence.name)
-                            .font(.headline)
+                            .font(.yogaHeadline())
                             .foregroundStyle(.primary)
 
                         Text("\(sequence.sections.count) sections • \(sequence.totalPoseCount) poses")
@@ -246,7 +246,7 @@ struct ExistingSequenceCard: View {
                         }
                     }
                 }
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -315,7 +315,7 @@ struct SectionSelectionRow: View {
             HStack(spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.yogaPrimary : .secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(section.name)

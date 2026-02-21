@@ -91,7 +91,7 @@ struct PosePickerView: View {
         .padding()
         .background(Color.green)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        .yogaFloatingShadow()
         .padding()
     }
 }
@@ -135,7 +135,7 @@ struct PosePickerRow: View {
             Button(action: onAdd) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.yogaPrimary)
             }
             .buttonStyle(.plain)
         }
@@ -182,7 +182,7 @@ struct PoseDetailSheet: View {
                     if !pose.benefit.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Benefits")
-                                .font(.headline)
+                                .font(.yogaHeadline())
 
                             Text(pose.benefit)
                                 .font(.subheadline)
@@ -194,7 +194,7 @@ struct PoseDetailSheet: View {
                     if !pose.muscleGroup.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Muscle Groups")
-                                .font(.headline)
+                                .font(.yogaHeadline())
 
                             Text(pose.muscleGroup)
                                 .font(.subheadline)
@@ -206,7 +206,7 @@ struct PoseDetailSheet: View {
                     if !pose.mechanics.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Mechanics")
-                                .font(.headline)
+                                .font(.yogaHeadline())
 
                             VStack(alignment: .leading, spacing: 12) {
                                 if !pose.mechanics.alignmentPrinciple.isEmpty {
@@ -226,7 +226,7 @@ struct PoseDetailSheet: View {
                     if !pose.sampleCues.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Teaching Cues")
-                                .font(.headline)
+                                .font(.yogaHeadline())
 
                             VStack(alignment: .leading, spacing: 8) {
                                 ForEach(Array(pose.sampleCues.enumerated()), id: \.offset) { index, cue in
@@ -236,7 +236,7 @@ struct PoseDetailSheet: View {
                                             .fontWeight(.bold)
                                             .foregroundStyle(.white)
                                             .frame(width: 20, height: 20)
-                                            .background(Color.accentColor)
+                                            .background(Color.yogaPrimary)
                                             .clipShape(Circle())
 
                                         Text(cue)
@@ -251,14 +251,14 @@ struct PoseDetailSheet: View {
                     if !pose.variations.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Variations")
-                                .font(.headline)
+                                .font(.yogaHeadline())
 
                             VStack(alignment: .leading, spacing: 8) {
                                 ForEach(pose.variations, id: \.self) { variation in
                                     HStack(alignment: .top, spacing: 12) {
                                         Image(systemName: "circle.fill")
                                             .font(.system(size: 6))
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(Color.yogaPrimary)
                                             .padding(.top, 6)
 
                                         Text(variation)
@@ -293,10 +293,10 @@ struct PoseDetailSheet: View {
                     onAdd()
                 } label: {
                     Label("Add to Section", systemImage: "plus.circle.fill")
-                        .font(.headline)
+                        .font(.yogaHeadline())
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color.yogaPrimary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }

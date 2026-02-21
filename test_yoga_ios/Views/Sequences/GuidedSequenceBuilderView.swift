@@ -81,7 +81,7 @@ struct GuidedSequenceBuilderView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -135,7 +135,7 @@ struct GuidedSequenceBuilderView: View {
         HStack(spacing: 8) {
             ForEach(GuidedBuilderStep.allCases, id: \.self) { step in
                 Capsule()
-                    .fill(step.rawValue <= currentStep.rawValue ? Color.accentColor : Color(.systemGray4))
+                    .fill(step.rawValue <= currentStep.rawValue ? Color.yogaPrimary : Color(.systemGray4))
                     .frame(height: 4)
             }
         }
@@ -148,7 +148,7 @@ struct GuidedSequenceBuilderView: View {
     private var startingPointView: some View {
         VStack(spacing: 24) {
             Text("How would you like to begin building your sequence?")
-                .font(.headline)
+                .font(.yogaHeadline())
                 .multilineTextAlignment(.center)
                 .padding(.top, 20)
 
@@ -181,10 +181,10 @@ struct GuidedSequenceBuilderView: View {
                 }
             } label: {
                 Text("Continue")
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(startingPointChoice != nil ? Color.accentColor : Color(.systemGray4))
+                    .background(startingPointChoice != nil ? Color.yogaPrimary : Color(.systemGray4))
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
@@ -280,7 +280,7 @@ struct GuidedSequenceBuilderView: View {
     private var selectDurationView: some View {
         VStack(spacing: 24) {
             Text("How long will your class be?")
-                .font(.headline)
+                .font(.yogaHeadline())
                 .padding(.top, 20)
 
             VStack(spacing: 12) {
@@ -310,7 +310,7 @@ struct GuidedSequenceBuilderView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
                 .padding()
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
 
             Divider()
 
@@ -357,17 +357,17 @@ struct GuidedSequenceBuilderView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(currentSectionIndex == index ? Color.accentColor.opacity(0.1) : Color.clear)
+                        .background(currentSectionIndex == index ? Color.yogaPrimary.opacity(0.1) : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(currentSectionIndex == index ? Color.accentColor : .primary)
+                    .foregroundStyle(currentSectionIndex == index ? Color.yogaPrimary : .primary)
                 }
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 
     private var currentSectionContent: some View {
@@ -441,7 +441,7 @@ struct GuidedSequenceBuilderView: View {
             }
         }
         .padding(.vertical)
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 
     private func generateRecommendedPoses() -> [Pose] {
@@ -485,7 +485,7 @@ struct GuidedSequenceBuilderView: View {
                         Image(systemName: "chevron.left")
                         Text("Previous")
                     }
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color(.systemGray5))
@@ -503,17 +503,17 @@ struct GuidedSequenceBuilderView: View {
                         Text("Next Section")
                         Image(systemName: "chevron.right")
                     }
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color.yogaPrimary)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
     }
 
     private var navigationButtons: some View {
@@ -527,7 +527,7 @@ struct GuidedSequenceBuilderView: View {
                     Image(systemName: "chevron.left")
                     Text("Back")
                 }
-                .font(.headline)
+                .font(.yogaHeadline())
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color(.systemGray5))
@@ -540,10 +540,10 @@ struct GuidedSequenceBuilderView: View {
                 }
             } label: {
                 Text("Continue")
-                    .font(.headline)
+                    .font(.yogaHeadline())
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(canProceed ? Color.accentColor : Color(.systemGray4))
+                    .background(canProceed ? Color.yogaPrimary : Color(.systemGray4))
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
@@ -637,14 +637,14 @@ struct StartingPointButton: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.title)
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.yogaPrimary : .secondary)
                     .frame(width: 50, height: 50)
-                    .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemGray6))
+                    .background(isSelected ? Color.yogaPrimary.opacity(0.1) : Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.headline)
+                        .font(.yogaHeadline())
                         .foregroundStyle(.primary)
 
                     Text(description)
@@ -657,15 +657,15 @@ struct StartingPointButton: View {
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
                 }
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.accentColor : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.yogaPrimary : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -682,7 +682,7 @@ struct CategoryButton: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Text(category.displayName)
-                    .font(.headline)
+                    .font(.yogaHeadline())
 
                 Text("\(poseCount) poses")
                     .font(.caption)
@@ -690,11 +690,11 @@ struct CategoryButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemBackground))
+            .background(isSelected ? Color.yogaPrimary.opacity(0.1) : Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.accentColor : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.yogaPrimary : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -724,10 +724,10 @@ struct PoseSelectionRow: View {
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.yogaPrimary : .secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -743,21 +743,21 @@ struct DurationButton: View {
         Button(action: action) {
             HStack {
                 Text(duration.displayName)
-                    .font(.headline)
+                    .font(.yogaHeadline())
 
                 Spacer()
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.yogaPrimary)
                 }
             }
             .padding()
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(.systemBackground))
+            .background(isSelected ? Color.yogaPrimary.opacity(0.1) : Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.accentColor : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.yogaPrimary : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -797,7 +797,7 @@ struct PoseRowInSection: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -828,12 +828,12 @@ struct RecommendedPoseCard: View {
             Button(action: onAdd) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.yogaPrimary)
             }
         }
         .frame(width: 100)
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

@@ -64,7 +64,7 @@ struct ProfileView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -113,7 +113,7 @@ struct ProfileView: View {
                 ActivityDetailView(
                     title: "Saved Sequences",
                     icon: "bookmark.fill",
-                    iconColor: Color.accentColor,
+                    iconColor: Color.yogaPrimary,
                     sequenceIds: userProfile.savedSequenceIds,
                     allSequences: communityViewModel?.sharedSequences ?? []
                 )
@@ -163,12 +163,11 @@ struct ProfileView: View {
         VStack(spacing: 16) {
             Image(systemName: userProfile.profileImageName)
                 .font(.system(size: 80))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.yogaPrimary)
 
             VStack(spacing: 4) {
                 Text(displayName)
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.yogaTitle(22))
 
                 HStack(spacing: 4) {
                     Image(systemName: userProfile.yogaExperienceLevel.icon)
@@ -194,7 +193,7 @@ struct ProfileView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -233,7 +232,7 @@ struct ProfileView: View {
     private var communityActivitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Community Activity")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             // Tab picker
             Picker("Activity Type", selection: $selectedActivityTab) {
@@ -272,7 +271,7 @@ struct ProfileView: View {
             } label: {
                 ActivityRow(
                     icon: "bookmark.fill",
-                    iconColor: Color.accentColor,
+                    iconColor: Color.yogaPrimary,
                     title: "Saved Sequences",
                     count: userProfile.savedSequenceIds.count
                 )
@@ -293,7 +292,7 @@ struct ProfileView: View {
             .buttonStyle(.plain)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -326,21 +325,21 @@ struct ProfileView: View {
             .buttonStyle(.plain)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private var experienceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Experience Level")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             HStack(spacing: 12) {
                 Image(systemName: userProfile.yogaExperienceLevel.icon)
                     .font(.title2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.yogaPrimary)
                     .frame(width: 44, height: 44)
-                    .background(Color.accentColor.opacity(0.1))
+                    .background(Color.yogaPrimary.opacity(0.1))
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -355,7 +354,7 @@ struct ProfileView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemBackground))
+            .background(Color.yogaCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -363,7 +362,7 @@ struct ProfileView: View {
     private var stylesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Favorite Styles")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             if userProfile.favoriteStyles.isEmpty {
                 Text("No styles selected yet")
@@ -371,7 +370,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 FlowLayout(spacing: 8) {
@@ -383,14 +382,14 @@ struct ProfileView: View {
                         .font(.caption)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.1))
-                        .foregroundStyle(Color.accentColor)
+                        .background(Color.yogaPrimary.opacity(0.1))
+                        .foregroundStyle(Color.yogaPrimary)
                         .clipShape(Capsule())
                     }
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -399,7 +398,7 @@ struct ProfileView: View {
     private var goalsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Goals")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             if userProfile.goals.isEmpty {
                 Text("No goals set yet")
@@ -407,7 +406,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 VStack(spacing: 8) {
@@ -415,7 +414,7 @@ struct ProfileView: View {
                         HStack(spacing: 12) {
                             Image(systemName: goal.icon)
                                 .font(.title3)
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.yogaPrimary)
                                 .frame(width: 32)
 
                             Text(goal.rawValue)
@@ -430,7 +429,7 @@ struct ProfileView: View {
                     }
                 }
                 .padding()
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -439,7 +438,7 @@ struct ProfileView: View {
     private var practiceTimesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Preferred Practice Times")
-                .font(.headline)
+                .font(.yogaHeadline())
 
             if userProfile.preferredPracticeTimes.isEmpty {
                 Text("No times selected yet")
@@ -447,7 +446,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
+                    .background(Color.yogaCardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 HStack(spacing: 12) {
@@ -455,7 +454,7 @@ struct ProfileView: View {
                         VStack(spacing: 4) {
                             Image(systemName: time.icon)
                                 .font(.title2)
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.yogaPrimary)
 
                             Text(time.rawValue)
                                 .font(.caption)
@@ -467,7 +466,7 @@ struct ProfileView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color(.systemBackground))
+                        .background(Color.yogaCardBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
@@ -496,7 +495,7 @@ struct StatCard: View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.yogaPrimary)
 
             Text(value)
                 .font(.title3)
@@ -508,7 +507,7 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -580,7 +579,7 @@ struct ActivityDetailView: View {
                     }
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -602,7 +601,7 @@ struct ActivitySequenceCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(sequence.sequence.name)
-                        .font(.headline)
+                        .font(.yogaHeadline())
 
                     Text("by \(sequence.authorName)")
                         .font(.caption)
@@ -629,13 +628,13 @@ struct ActivitySequenceCard: View {
                     .foregroundStyle(.red)
 
                 Label("\(sequence.savesCount)", systemImage: "bookmark.fill")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.yogaPrimary)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -674,7 +673,7 @@ struct DiscussionActivityDetailView: View {
                     }
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -694,7 +693,7 @@ struct ActivityPostCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(post.title)
-                .font(.headline)
+                .font(.yogaHeadline())
 
             Text(post.content)
                 .font(.subheadline)
@@ -715,7 +714,7 @@ struct ActivityPostCard: View {
             .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.yogaCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -746,7 +745,7 @@ struct SharedSequencesDetailView: View {
                     }
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.yogaSurface)
             .navigationTitle("My Shared Sequences")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -850,7 +849,7 @@ struct EditProfileView: View {
                                 Spacer()
                                 if editedStyles.contains(style) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(Color.yogaPrimary)
                                 }
                             }
                             .foregroundStyle(.primary)
@@ -870,7 +869,7 @@ struct EditProfileView: View {
                                 Spacer()
                                 if editedGoals.contains(goal) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(Color.yogaPrimary)
                                 }
                             }
                             .foregroundStyle(.primary)
@@ -895,7 +894,7 @@ struct EditProfileView: View {
                                 Spacer()
                                 if editedTimes.contains(time) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(Color.yogaPrimary)
                                 }
                             }
                             .foregroundStyle(.primary)

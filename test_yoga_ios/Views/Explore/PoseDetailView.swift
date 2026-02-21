@@ -30,8 +30,7 @@ struct PoseDetailView: View {
 
                     VStack(spacing: 4) {
                         Text(pose.nameEnglish)
-                            .font(.title)
-                            .fontWeight(.bold)
+                            .font(.yogaTitle())
 
                         Text(pose.nameSanskrit)
                             .font(.title3)
@@ -53,7 +52,7 @@ struct PoseDetailView: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.accentColor)
+                            .background(Color.yogaPrimary)
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
@@ -133,7 +132,7 @@ struct PoseDetailView: View {
                                         .fontWeight(.bold)
                                         .foregroundStyle(.white)
                                         .frame(width: 24, height: 24)
-                                        .background(Color.accentColor)
+                                        .background(Color.yogaPrimary)
                                         .clipShape(Circle())
 
                                     Text(cue)
@@ -158,7 +157,7 @@ struct PoseDetailView: View {
                                         HStack(alignment: .center, spacing: 12) {
                                             Image(systemName: "arrow.right.circle.fill")
                                                 .font(.system(size: 16))
-                                                .foregroundStyle(Color.accentColor)
+                                                .foregroundStyle(Color.yogaPrimary)
 
                                             Text(variation)
                                                 .font(.body)
@@ -171,7 +170,7 @@ struct PoseDetailView: View {
                                                 .foregroundStyle(.tertiary)
                                         }
                                         .padding(10)
-                                        .background(Color(.systemGray6))
+                                        .background(Color.yogaCardBackground)
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
                                     .buttonStyle(.plain)
@@ -180,7 +179,7 @@ struct PoseDetailView: View {
                                     HStack(alignment: .top, spacing: 12) {
                                         Image(systemName: "circle.fill")
                                             .font(.system(size: 6))
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(Color.yogaPrimary)
                                             .padding(.top, 6)
 
                                         Text(variation)
@@ -258,7 +257,7 @@ struct PoseDetailView: View {
         .padding()
         .background(Color.green)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        .yogaFloatingShadow()
         .padding(.horizontal)
         .padding(.top, 8)
     }
@@ -270,7 +269,7 @@ struct SectionHeader: View {
 
     var body: some View {
         Label(title, systemImage: systemImage)
-            .font(.headline)
+            .font(.yogaHeadline())
     }
 }
 
@@ -292,7 +291,7 @@ struct MechanicsRow: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGray6))
+        .background(Color.yogaPrimary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }

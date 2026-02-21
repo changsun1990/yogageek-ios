@@ -18,7 +18,7 @@ struct PracticeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemGroupedBackground)
+                Color.yogaSurface
                     .ignoresSafeArea()
 
                 if viewModel.isComplete {
@@ -114,7 +114,7 @@ struct PracticeView: View {
                     }
                 }
                 .padding()
-                .background(Color(.systemBackground))
+                .background(Color.yogaCardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -180,7 +180,7 @@ struct PracticeView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color.yogaPrimary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
