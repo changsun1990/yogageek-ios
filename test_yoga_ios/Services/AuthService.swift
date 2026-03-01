@@ -81,6 +81,7 @@ class AuthService {
 
     // MARK: - Google Sign In
 
+    @MainActor
     func signInWithGoogle() async throws -> User {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             throw AuthError.unknown("Missing Firebase client ID")
@@ -89,12 +90,8 @@ class AuthService {
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 
-        guard let windowScene = await MainActor.run(body: {
-            UIApplication.shared.connectedScenes.first as? UIWindowScene
-        }),
-        let rootViewController = await MainActor.run(body: {
-            windowScene.windows.first?.rootViewController
-        }) else {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.keyWindow?.rootViewController else {
             throw AuthError.unknown("No root view controller found")
         }
 
@@ -144,6 +141,7 @@ class AuthService {
 
     // MARK: - Sign Out
 
+    @MainActor
     func signOut() throws {
         GIDSignIn.sharedInstance.signOut()
         try Auth.auth().signOut()

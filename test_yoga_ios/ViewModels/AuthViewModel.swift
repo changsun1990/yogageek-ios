@@ -10,7 +10,7 @@ import FirebaseAuth
 
 @Observable
 @MainActor
-class AuthViewModel: @unchecked Sendable {
+class AuthViewModel {
     var isSignedIn: Bool = false
     var currentUser: User?
     var isLoading: Bool = false
@@ -42,21 +42,15 @@ class AuthViewModel: @unchecked Sendable {
             if !displayName.isEmpty {
                 try await AuthService.shared.updateDisplayName(displayName)
             }
-            await MainActor.run {
-                self.currentUser = user
-                self.isSignedIn = true
-                self.isLoading = false
-            }
+            currentUser = user
+            isSignedIn = true
+            isLoading = false
         } catch let error as AuthError {
-            await MainActor.run {
-                self.errorMessage = error.errorDescription
-                self.isLoading = false
-            }
+            errorMessage = error.errorDescription
+            isLoading = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            errorMessage = error.localizedDescription
+            isLoading = false
         }
     }
 
@@ -68,21 +62,15 @@ class AuthViewModel: @unchecked Sendable {
 
         do {
             let user = try await AuthService.shared.signIn(email: email, password: password)
-            await MainActor.run {
-                self.currentUser = user
-                self.isSignedIn = true
-                self.isLoading = false
-            }
+            currentUser = user
+            isSignedIn = true
+            isLoading = false
         } catch let error as AuthError {
-            await MainActor.run {
-                self.errorMessage = error.errorDescription
-                self.isLoading = false
-            }
+            errorMessage = error.errorDescription
+            isLoading = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            errorMessage = error.localizedDescription
+            isLoading = false
         }
     }
 
@@ -94,21 +82,15 @@ class AuthViewModel: @unchecked Sendable {
 
         do {
             let user = try await AuthService.shared.signInWithGoogle()
-            await MainActor.run {
-                self.currentUser = user
-                self.isSignedIn = true
-                self.isLoading = false
-            }
+            currentUser = user
+            isSignedIn = true
+            isLoading = false
         } catch let error as AuthError {
-            await MainActor.run {
-                self.errorMessage = error.errorDescription
-                self.isLoading = false
-            }
+            errorMessage = error.errorDescription
+            isLoading = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            errorMessage = error.localizedDescription
+            isLoading = false
         }
     }
 
@@ -120,21 +102,15 @@ class AuthViewModel: @unchecked Sendable {
 
         do {
             let user = try await AuthService.shared.signInWithApple()
-            await MainActor.run {
-                self.currentUser = user
-                self.isSignedIn = true
-                self.isLoading = false
-            }
+            currentUser = user
+            isSignedIn = true
+            isLoading = false
         } catch let error as AuthError {
-            await MainActor.run {
-                self.errorMessage = error.errorDescription
-                self.isLoading = false
-            }
+            errorMessage = error.errorDescription
+            isLoading = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            errorMessage = error.localizedDescription
+            isLoading = false
         }
     }
 
@@ -158,21 +134,15 @@ class AuthViewModel: @unchecked Sendable {
 
         do {
             try await AuthService.shared.sendPasswordReset(email: email)
-            await MainActor.run {
-                self.isLoading = false
-            }
+            isLoading = false
             return true
         } catch let error as AuthError {
-            await MainActor.run {
-                self.errorMessage = error.errorDescription
-                self.isLoading = false
-            }
+            errorMessage = error.errorDescription
+            isLoading = false
             return false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            errorMessage = error.localizedDescription
+            isLoading = false
             return false
         }
     }

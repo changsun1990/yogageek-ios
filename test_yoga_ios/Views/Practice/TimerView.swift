@@ -11,6 +11,9 @@ struct TimerView: View {
     let timeRemaining: Int
     let totalTime: Int
     let isPlaying: Bool
+    var size: CGFloat = 200
+
+    private var scale: CGFloat { size / 200 }
 
     var progress: Double {
         guard totalTime > 0 else { return 0 }
@@ -21,30 +24,30 @@ struct TimerView: View {
         ZStack {
             // Background circle
             Circle()
-                .stroke(Color(.systemGray5), lineWidth: 12)
+                .stroke(Color(.systemGray5), lineWidth: 12 * scale)
 
             // Progress circle
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
                     Color.yogaPrimary,
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 12 * scale, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 0.5), value: progress)
 
             // Time display
-            VStack(spacing: 4) {
+            VStack(spacing: 4 * scale) {
                 Text(formattedTime)
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 48 * scale, weight: .bold, design: .rounded))
                     .monospacedDigit()
 
                 Text(isPlaying ? "remaining" : "paused")
-                    .font(.subheadline)
+                    .font(.system(size: 14 * scale))
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 200, height: 200)
+        .frame(width: size, height: size)
     }
 
     private var formattedTime: String {

@@ -9,16 +9,25 @@ import Foundation
 import SwiftUI
 import AVFoundation
 
+enum TimingMode {
+    case perPose      // individual pose timers
+    case sectionLevel // one timer for the whole section, all poses visible
+    case flow         // no timer, poses scroll slowly
+}
+
 @Observable
 class PracticeViewModel {
     // Practice data
     let sequence: YogaSequence
     let poses: [Pose]
     private(set) var flattenedPoses: [(sectionName: String, poseEntry: PoseEntry, pose: Pose?)] = []
+    /// Effective section durations (may include distributed sequence target)
+    private var effectiveSectionDurations: [String: Int] = [:]
 
     // Current state
     var currentIndex: Int = 0
     var timeRemaining: Int = 0
+    var sectionTimeRemaining: Int = 0
     var isPlaying: Bool = false
     var isComplete: Bool = false
     var audioEnabled: Bool = true
@@ -30,7 +39,32 @@ class PracticeViewModel {
     private let speechSynthesizer = AVSpeechSynthesizer()
     private var audioPlayer: AVAudioPlayer?
 
-    // Computed properties
+    /// Fallback duration (seconds) for poses in a perPose section that have no
+    /// explicit duration set. Keeps auto-play flowing instead of getting stuck.
+    private static let defaultPoseDuration = 30
+
+    // MARK: - Timing Mode
+
+    var currentTimingMode: TimingMode {
+        timingModeForSection(currentSectionName)
+    }
+
+    func timingModeForSection(_ sectionName: String) -> TimingMode {
+        guard let section = sequence.sections.first(where: { $0.name == sectionName }) else { return .flow }
+        // If any pose in the section has an explicit duration → perPose
+        if section.poses.contains(where: { $0.duration != nil }) {
+            return .perPose
+        }
+        // If section has a duration (set or distributed from sequence) → sectionLevel
+        if effectiveSectionDurations[section.id] != nil || section.sectionDuration != nil {
+            return .sectionLevel
+        }
+        // No duration anywhere → flow
+        return .flow
+    }
+
+    // MARK: - Computed Properties
+
     var currentSectionName: String {
         guard currentIndex < flattenedPoses.count else { return "" }
         return flattenedPoses[currentIndex].sectionName
@@ -46,13 +80,38 @@ class PracticeViewModel {
         return flattenedPoses[currentIndex].pose
     }
 
-    private let defaultDuration = 30 // Default duration when not set
+    var currentPoseIsTimed: Bool {
+        currentTimingMode == .perPose && durationForPose(at: currentIndex) > 0
+    }
+
+    var currentPoseTotalDuration: Int {
+        durationForPose(at: currentIndex)
+    }
 
     var progress: Double {
-        guard let entry = currentPoseEntry else { return 0 }
-        let duration = entry.duration ?? defaultDuration
+        let duration = durationForPose(at: currentIndex)
         guard duration > 0 else { return 0 }
         return Double(duration - timeRemaining) / Double(duration)
+    }
+
+    /// All poses in the current section (for section-level and flow display)
+    var currentSectionPoses: [(poseEntry: PoseEntry, pose: Pose?)] {
+        let sectionName = currentSectionName
+        return flattenedPoses
+            .filter { $0.sectionName == sectionName }
+            .map { (poseEntry: $0.poseEntry, pose: $0.pose) }
+    }
+
+    /// The section-level total duration
+    var sectionTotalDuration: Int {
+        guard let section = sequence.sections.first(where: { $0.name == currentSectionName }) else { return 0 }
+        return effectiveSectionDurations[section.id] ?? section.sectionDuration ?? 0
+    }
+
+    var sectionProgress: Double {
+        let total = sectionTotalDuration
+        guard total > 0 else { return 0 }
+        return Double(total - sectionTimeRemaining) / Double(total)
     }
 
     var totalPoses: Int {
@@ -64,35 +123,88 @@ class PracticeViewModel {
     }
 
     var hasNext: Bool {
-        currentIndex < flattenedPoses.count - 1
+        if currentTimingMode == .sectionLevel || currentTimingMode == .flow {
+            return hasNextSection
+        }
+        return currentIndex < flattenedPoses.count - 1
     }
 
     var hasPrevious: Bool {
-        currentIndex > 0
+        if currentTimingMode == .sectionLevel || currentTimingMode == .flow {
+            return hasPreviousSection
+        }
+        return currentIndex > 0
     }
+
+    var currentSectionIndex: Int {
+        let name = currentSectionName
+        return sequence.sections.firstIndex(where: { $0.name == name }) ?? 0
+    }
+
+    var totalSections: Int {
+        sequence.sections.count
+    }
+
+    var hasNextSection: Bool {
+        currentSectionIndex < sequence.sections.count - 1
+    }
+
+    var hasPreviousSection: Bool {
+        currentSectionIndex > 0
+    }
+
+    // MARK: - Init
 
     init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
         self.sequence = sequence
         self.poses = poses
+        distributeSequenceDuration()
         flattenPoses()
         setupAudioSession()
 
         if let sectionIndex = startAtSection, sectionIndex < sequence.sections.count {
-            // Find the first pose index for this section
             let sectionName = sequence.sections[sectionIndex].name
             if let index = flattenedPoses.firstIndex(where: { $0.sectionName == sectionName }) {
                 currentIndex = index
             }
         }
 
-        if let entry = currentPoseEntry {
-            timeRemaining = entry.duration ?? defaultDuration
+        initializeTimers()
+    }
+
+    private func initializeTimers() {
+        let mode = currentTimingMode
+        switch mode {
+        case .perPose:
+            timeRemaining = durationForPose(at: currentIndex)
+        case .sectionLevel:
+            sectionTimeRemaining = sectionTotalDuration
+        case .flow:
+            break
+        }
+    }
+
+    /// If sequence has targetDuration and no sections/poses have durations,
+    /// distribute evenly across sections as implicit sectionDuration.
+    private func distributeSequenceDuration() {
+        guard sequence.targetDuration > 0 else { return }
+        let allSectionsEmpty = sequence.sections.allSatisfy { section in
+            section.sectionDuration == nil && section.poses.allSatisfy { $0.duration == nil }
+        }
+        guard allSectionsEmpty else { return }
+
+        let nonEmptySections = sequence.sections.filter { !$0.poses.isEmpty }
+        guard !nonEmptySections.isEmpty else { return }
+
+        let perSection = sequence.targetDuration / nonEmptySections.count
+        for section in nonEmptySections {
+            effectiveSectionDurations[section.id] = perSection
         }
     }
 
     private func setupAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .duckOthers)
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             print("Failed to setup audio session: \(error)")
@@ -109,6 +221,16 @@ class PracticeViewModel {
         }
     }
 
+    /// Returns the pose's own explicit duration, or 0.
+    /// Does NOT distribute section duration to individual poses.
+    private func durationForPose(at index: Int) -> Int {
+        guard index < flattenedPoses.count else { return 0 }
+        let entry = flattenedPoses[index].poseEntry
+        return entry.duration ?? 0
+    }
+
+    // MARK: - Playback Controls
+
     func togglePlayPause() {
         if isPlaying {
             pause()
@@ -121,7 +243,19 @@ class PracticeViewModel {
         guard !isComplete else { return }
         isPlaying = true
         announcePose()
-        startTimer()
+        switch currentTimingMode {
+        case .perPose:
+            if !currentPoseIsTimed {
+                // Pose has no explicit duration — use the default so playback
+                // doesn't get stuck waiting for a manual tap.
+                timeRemaining = Self.defaultPoseDuration
+            }
+            startTimer()
+        case .sectionLevel:
+            startTimer()
+        case .flow:
+            break
+        }
     }
 
     func pause() {
@@ -130,33 +264,136 @@ class PracticeViewModel {
     }
 
     func next() {
-        guard hasNext else {
+        switch currentTimingMode {
+        case .sectionLevel, .flow:
+            nextSection()
+        case .perPose:
+            nextPose()
+        }
+    }
+
+    func previous() {
+        switch currentTimingMode {
+        case .sectionLevel, .flow:
+            previousSection()
+        case .perPose:
+            previousPose()
+        }
+    }
+
+    private func nextPose() {
+        guard currentIndex < flattenedPoses.count - 1 else {
             complete()
             return
         }
         stopTimer()
         currentIndex += 1
-        if let entry = currentPoseEntry {
-            timeRemaining = entry.duration ?? defaultDuration
-        }
+        timeRemaining = durationForPose(at: currentIndex)
         playChime()
+
+        // Check if we entered a new section with different timing mode
+        let newMode = currentTimingMode
         if isPlaying {
             announcePose()
-            startTimer()
+            switch newMode {
+            case .perPose:
+                if !currentPoseIsTimed {
+                    // No explicit duration — use the default so playback keeps flowing.
+                    timeRemaining = Self.defaultPoseDuration
+                }
+                startTimer()
+            case .sectionLevel:
+                sectionTimeRemaining = sectionTotalDuration
+                startTimer()
+            case .flow:
+                break
+            }
+        } else if newMode == .sectionLevel {
+            sectionTimeRemaining = sectionTotalDuration
         }
     }
 
-    func previous() {
-        guard hasPrevious else { return }
+    func nextSection() {
+        guard hasNextSection else {
+            complete()
+            return
+        }
         stopTimer()
-        currentIndex -= 1
-        if let entry = currentPoseEntry {
-            timeRemaining = entry.duration ?? defaultDuration
+        let nextSectionIdx = currentSectionIndex + 1
+        let nextSectionName = sequence.sections[nextSectionIdx].name
+        if let poseIdx = flattenedPoses.firstIndex(where: { $0.sectionName == nextSectionName }) {
+            currentIndex = poseIdx
         }
         playChime()
+
+        let newMode = currentTimingMode
+        switch newMode {
+        case .sectionLevel:
+            sectionTimeRemaining = sectionTotalDuration
+            if isPlaying { startTimer() }
+        case .perPose:
+            timeRemaining = durationForPose(at: currentIndex)
+            if isPlaying {
+                if !currentPoseIsTimed { timeRemaining = Self.defaultPoseDuration }
+                startTimer()
+            }
+        case .flow:
+            break
+        }
+        if isPlaying { announcePose() }
+    }
+
+    func previousSection() {
+        guard hasPreviousSection else { return }
+        stopTimer()
+        let prevSectionIdx = currentSectionIndex - 1
+        let prevSectionName = sequence.sections[prevSectionIdx].name
+        if let poseIdx = flattenedPoses.firstIndex(where: { $0.sectionName == prevSectionName }) {
+            currentIndex = poseIdx
+        }
+        playChime()
+
+        let newMode = currentTimingMode
+        switch newMode {
+        case .sectionLevel:
+            sectionTimeRemaining = sectionTotalDuration
+            if isPlaying { startTimer() }
+        case .perPose:
+            timeRemaining = durationForPose(at: currentIndex)
+            if isPlaying {
+                if !currentPoseIsTimed { timeRemaining = Self.defaultPoseDuration }
+                startTimer()
+            }
+        case .flow:
+            break
+        }
+        if isPlaying { announcePose() }
+    }
+
+    private func previousPose() {
+        guard currentIndex > 0 else { return }
+        stopTimer()
+        currentIndex -= 1
+        timeRemaining = durationForPose(at: currentIndex)
+        playChime()
+
+        let newMode = currentTimingMode
         if isPlaying {
             announcePose()
-            startTimer()
+            switch newMode {
+            case .perPose:
+                if !currentPoseIsTimed {
+                    timeRemaining = Self.defaultPoseDuration
+                }
+                startTimer()
+            case .sectionLevel:
+                sectionTimeRemaining = sectionTotalDuration
+                startTimer()
+            case .flow:
+                break
+            }
+        } else if newMode == .sectionLevel {
+            sectionTimeRemaining = sectionTotalDuration
         }
     }
 
@@ -164,9 +401,7 @@ class PracticeViewModel {
         stopTimer()
         currentIndex = 0
         isComplete = false
-        if let entry = currentPoseEntry {
-            timeRemaining = entry.duration ?? defaultDuration
-        }
+        initializeTimers()
     }
 
     private func startTimer() {
@@ -182,16 +417,38 @@ class PracticeViewModel {
     }
 
     private func tick() {
+        switch currentTimingMode {
+        case .perPose:
+            tickPose()
+        case .sectionLevel:
+            tickSection()
+        case .flow:
+            break
+        }
+    }
+
+    private func tickPose() {
         guard timeRemaining > 0 else {
-            next()
+            nextPose()
             return
         }
         timeRemaining -= 1
-
         if timeRemaining == 0 {
-            // Small delay before moving to next
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.next()
+                self?.nextPose()
+            }
+        }
+    }
+
+    private func tickSection() {
+        guard sectionTimeRemaining > 0 else {
+            nextSection()
+            return
+        }
+        sectionTimeRemaining -= 1
+        if sectionTimeRemaining == 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.nextSection()
             }
         }
     }
@@ -222,14 +479,12 @@ class PracticeViewModel {
 
     private func playChime() {
         guard audioEnabled else { return }
-        // Play system sound for pose transition
-        AudioServicesPlaySystemSound(1057) // Tink sound
+        AudioServicesPlaySystemSound(1057)
     }
 
     private func playCompletionSound() {
         guard audioEnabled else { return }
-        // Play completion sound
-        AudioServicesPlaySystemSound(1025) // Positive sound
+        AudioServicesPlaySystemSound(1025)
     }
 
     func toggleAudio() {
