@@ -20,6 +20,7 @@ class PracticeViewModel {
     // Practice data
     let sequence: YogaSequence
     let poses: [Pose]
+    let isSectionPractice: Bool
     private(set) var flattenedPoses: [(sectionName: String, poseEntry: PoseEntry, pose: Pose?)] = []
     /// Effective section durations (may include distributed sequence target)
     private var effectiveSectionDurations: [String: Int] = [:]
@@ -28,9 +29,14 @@ class PracticeViewModel {
     var currentIndex: Int = 0
     var timeRemaining: Int = 0
     var sectionTimeRemaining: Int = 0
+    /// Total seconds elapsed while playing — never resets between poses.
+    var sessionTimeElapsed: Int = 0
     var isPlaying: Bool = false
     var isComplete: Bool = false
     var audioEnabled: Bool = true
+    /// When voice commands are active, suppress AVSpeechSynthesizer announcements
+    /// to avoid audio session priority conflicts (!pri / 561017449 errors).
+    var announcementEnabled: Bool = true
 
     // Timer
     private var timer: Timer?
@@ -80,6 +86,11 @@ class PracticeViewModel {
         return flattenedPoses[currentIndex].pose
     }
 
+    var upcomingPose: Pose? {
+        guard currentIndex + 1 < flattenedPoses.count else { return nil }
+        return flattenedPoses[currentIndex + 1].pose
+    }
+
     var currentPoseIsTimed: Bool {
         currentTimingMode == .perPose && durationForPose(at: currentIndex) > 0
     }
@@ -100,6 +111,17 @@ class PracticeViewModel {
         return flattenedPoses
             .filter { $0.sectionName == sectionName }
             .map { (poseEntry: $0.poseEntry, pose: $0.pose) }
+    }
+
+    /// Total duration of the whole session, used for the session countdown.
+    /// Priority: sequence.targetDuration → sum of pose durations → sum of section durations.
+    var sessionTotalDuration: Int {
+        if sequence.targetDuration > 0 { return sequence.targetDuration }
+        let poseDurations = flattenedPoses.reduce(0) { $0 + ($1.poseEntry.duration ?? 0) }
+        if poseDurations > 0 { return poseDurations }
+        return sequence.sections.reduce(0) {
+            $0 + (effectiveSectionDurations[$1.id] ?? $1.sectionDuration ?? 0)
+        }
     }
 
     /// The section-level total duration
@@ -123,17 +145,11 @@ class PracticeViewModel {
     }
 
     var hasNext: Bool {
-        if currentTimingMode == .sectionLevel || currentTimingMode == .flow {
-            return hasNextSection
-        }
-        return currentIndex < flattenedPoses.count - 1
+        currentIndex < flattenedPoses.count - 1
     }
 
     var hasPrevious: Bool {
-        if currentTimingMode == .sectionLevel || currentTimingMode == .flow {
-            return hasPreviousSection
-        }
-        return currentIndex > 0
+        currentIndex > 0
     }
 
     var currentSectionIndex: Int {
@@ -143,6 +159,17 @@ class PracticeViewModel {
 
     var totalSections: Int {
         sequence.sections.count
+    }
+
+    /// 1-based pose number within the current section
+    var currentPoseIndexInSection: Int {
+        let name = currentSectionName
+        let sectionIndices = flattenedPoses.indices.filter { flattenedPoses[$0].sectionName == name }
+        return (sectionIndices.firstIndex(of: currentIndex) ?? 0) + 1
+    }
+
+    var totalPosesInSection: Int {
+        currentSectionPoses.count
     }
 
     var hasNextSection: Bool {
@@ -158,6 +185,7 @@ class PracticeViewModel {
     init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
         self.sequence = sequence
         self.poses = poses
+        self.isSectionPractice = startAtSection != nil
         distributeSequenceDuration()
         flattenPoses()
         setupAudioSession()
@@ -203,9 +231,15 @@ class PracticeViewModel {
     }
 
     private func setupAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        // Don't downgrade from .playAndRecord — VoiceCommandService may have
+        // already configured the session for recording. SwiftUI re-creates view
+        // structs on every @Observable change, causing this init to run on
+        // discarded instances; resetting the category here would break the mic.
+        guard session.category != .playAndRecord else { return }
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
-            try AVAudioSession.sharedInstance().setActive(true)
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
+            try session.setActive(true)
         } catch {
             print("Failed to setup audio session: \(error)")
         }
@@ -254,7 +288,7 @@ class PracticeViewModel {
         case .sectionLevel:
             startTimer()
         case .flow:
-            break
+            startTimer() // needed for session elapsed tracking
         }
     }
 
@@ -264,21 +298,11 @@ class PracticeViewModel {
     }
 
     func next() {
-        switch currentTimingMode {
-        case .sectionLevel, .flow:
-            nextSection()
-        case .perPose:
-            nextPose()
-        }
+        nextPose()
     }
 
     func previous() {
-        switch currentTimingMode {
-        case .sectionLevel, .flow:
-            previousSection()
-        case .perPose:
-            previousPose()
-        }
+        previousPose()
     }
 
     private func nextPose() {
@@ -401,6 +425,7 @@ class PracticeViewModel {
         stopTimer()
         currentIndex = 0
         isComplete = false
+        sessionTimeElapsed = 0
         initializeTimers()
     }
 
@@ -417,6 +442,7 @@ class PracticeViewModel {
     }
 
     private func tick() {
+        sessionTimeElapsed += 1
         switch currentTimingMode {
         case .perPose:
             tickPose()
@@ -463,7 +489,7 @@ class PracticeViewModel {
     // MARK: - Audio
 
     private func announcePose() {
-        guard audioEnabled, let pose = currentPose else { return }
+        guard audioEnabled, announcementEnabled, let pose = currentPose else { return }
 
         // Stop any current speech
         speechSynthesizer.stopSpeaking(at: .immediate)
@@ -471,14 +497,19 @@ class PracticeViewModel {
         // Create utterance with pose name
         let utterance = AVSpeechUtterance(string: pose.nameEnglish)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.9
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        // Pick the highest-quality installed en-US voice (premium > enhanced > default).
+        // If none found, utterance.voice stays nil → system default, still speaks.
+        utterance.voice = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == "en-US" }
+            .max(by: { $0.quality.rawValue < $1.quality.rawValue })
+            ?? AVSpeechSynthesisVoice(language: "en-US")
         utterance.volume = 0.8
 
         speechSynthesizer.speak(utterance)
     }
 
     private func playChime() {
-        guard audioEnabled else { return }
+        guard audioEnabled, announcementEnabled else { return }
         AudioServicesPlaySystemSound(1057)
     }
 

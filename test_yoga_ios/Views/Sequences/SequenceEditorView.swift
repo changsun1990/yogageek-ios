@@ -24,6 +24,14 @@ struct SequenceEditorView: View {
     @State private var sectionToShare: YogaSection?
     @State private var showingShareSection = false
     @State private var showingShareSequence = false
+    @State private var practiceStartSection: Int?
+    @State private var showingMusicPicker = false
+    @State private var showingDurationEditor = false
+    @State private var musicManager = MusicManager.shared
+    @State private var sectionToCopyToNew: YogaSection?
+    @State private var showingCopySectionToNew = false
+    @State private var sectionToCopyToExisting: YogaSection?
+    @State private var showingCopySectionToExisting = false
 
     var body: some View {
         NavigationStack {
@@ -63,6 +71,18 @@ struct SequenceEditorView: View {
                 .fullScreenCover(isPresented: $showingPractice) {
                     PracticeView(sequence: sequence, poses: poses)
                 }
+                .fullScreenCover(isPresented: Binding(
+                    get: { practiceStartSection != nil },
+                    set: { if !$0 { practiceStartSection = nil } }
+                )) {
+                    PracticeView(sequence: sequence, poses: poses, startAtSection: practiceStartSection)
+                }
+                .sheet(isPresented: $showingMusicPicker) {
+                    MusicPickerView(musicManager: musicManager)
+                }
+                .sheet(isPresented: $showingDurationEditor) {
+                    DurationEditorView(sequence: $sequence)
+                }
                 .sheet(item: $selectedPoseForDetail) { pose in
                     PoseDetailSheet(pose: pose) {
                         // Just close the detail view, pose is already in section
@@ -81,6 +101,29 @@ struct SequenceEditorView: View {
                         ShareSequenceView(sequence: sequence, communityViewModel: communityViewModel) {
                             showingShareSequence = false
                         }
+                    }
+                }
+                .fullScreenCover(isPresented: $showingCopySectionToNew) {
+                    if let section = sectionToCopyToNew {
+                        SequenceEditorView(
+                            viewModel: viewModel,
+                            poses: poses,
+                            communityViewModel: communityViewModel,
+                            sequence: YogaSequence(
+                                name: "",
+                                sections: [viewModel.copySection(section)],
+                                group: sequence.group
+                            ),
+                            isNew: true
+                        )
+                    }
+                }
+                .sheet(isPresented: $showingCopySectionToExisting) {
+                    if let section = sectionToCopyToExisting {
+                        CopySectionToExistingView(
+                            section: section,
+                            viewModel: viewModel
+                        )
                     }
                 }
         }
@@ -114,7 +157,7 @@ struct SequenceEditorView: View {
     }
 
     private var summarySection: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 12) {
             SummaryItem(
                 icon: "rectangle.stack",
                 value: "\(sequence.sections.count)",
@@ -125,11 +168,56 @@ struct SequenceEditorView: View {
                 value: "\(sequence.totalPoseCount)",
                 label: "Poses"
             )
-            SummaryItem(
-                icon: "clock",
-                value: formattedTotalDuration,
-                label: "Duration"
-            )
+
+            // Tappable Duration
+            Button {
+                showingDurationEditor = true
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.title2)
+                        .foregroundStyle(Color.yogaPrimary)
+                    Text(formattedTotalDuration)
+                        .font(.yogaHeadline())
+                    HStack(spacing: 2) {
+                        Text("Duration")
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 8, weight: .semibold))
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(Color.yogaPrimary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+
+            // Music
+            Button {
+                showingMusicPicker = true
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: musicManager.activeService != .none ? "music.note.list" : "music.note")
+                        .font(.title2)
+                        .foregroundStyle(musicManager.activeService != .none ? Color.yogaPrimary : Color.accentColor)
+                    Text(musicManager.activeService != .none ? "Playing" : "Off")
+                        .font(.yogaHeadline())
+                    HStack(spacing: 2) {
+                        Text("Music")
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 8, weight: .semibold))
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+                .background(Color.yogaPrimary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
         }
         .padding()
         .background(Color.yogaCardBackground)
@@ -170,6 +258,17 @@ struct SequenceEditorView: View {
                     onShare: {
                         sectionToShare = sequence.sections[index]
                         showingShareSection = true
+                    },
+                    onPractice: section.poses.isEmpty ? nil : {
+                        practiceStartSection = index
+                    },
+                    onCopyToNew: section.poses.isEmpty ? nil : {
+                        sectionToCopyToNew = sequence.sections[index]
+                        showingCopySectionToNew = true
+                    },
+                    onCopyToExisting: section.poses.isEmpty ? nil : {
+                        sectionToCopyToExisting = sequence.sections[index]
+                        showingCopySectionToExisting = true
                     }
                 )
             }
@@ -217,7 +316,8 @@ struct SequenceEditorView: View {
 
     private func addPoseToSection(_ pose: Pose) {
         guard let index = targetSectionIndex, index < sequence.sections.count else { return }
-        let poseEntry = PoseEntry(poseId: pose.id)
+        let isCustom = pose.id.hasPrefix("custom-")
+        let poseEntry = PoseEntry(poseId: pose.id, customName: isCustom ? pose.nameEnglish : nil)
         withAnimation {
             sequence.sections[index].poses.append(poseEntry)
         }

@@ -11,11 +11,16 @@ struct PosePickerView: View {
     @Environment(\.dismiss) private var dismiss
     let poses: [Pose]
     let onSelect: (Pose) -> Void
+    var allowMultiSelect: Bool = false
+    var onSelectMultiple: (([Pose]) -> Void)? = nil
 
     @State private var searchText = ""
     @State private var selectedPoseForDetail: Pose?
     @State private var showingConfirmation = false
     @State private var addedPoseName = ""
+    @State private var showingCustomPose = false
+    @State private var customPoseName = ""
+    @State private var selectedPoseIds: Set<String> = []
 
     private var filteredPoses: [Pose] {
         if searchText.isEmpty {
@@ -29,40 +34,186 @@ struct PosePickerView: View {
 
     var body: some View {
         NavigationStack {
-            List(filteredPoses) { pose in
-                PosePickerRow(
-                    pose: pose,
-                    onTap: {
-                        selectedPoseForDetail = pose
-                    },
-                    onAdd: {
-                        addPose(pose)
+            List {
+                // Custom pose section
+                Section {
+                    if showingCustomPose {
+                        HStack(spacing: 10) {
+                            Image(systemName: "person.fill.questionmark")
+                                .font(.title3)
+                                .foregroundStyle(Color.yogaPrimary)
+                                .frame(width: 44, height: 44)
+                                .background(Color.yogaPrimary.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            TextField("Pose name", text: $customPoseName)
+                                .font(.subheadline)
+                                .textFieldStyle(.roundedBorder)
+                                .submitLabel(.done)
+                                .onSubmit {
+                                    addCustomPose()
+                                }
+
+                            Button {
+                                addCustomPose()
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Color.yogaPrimary)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(customPoseName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                    } else {
+                        Button {
+                            withAnimation {
+                                showingCustomPose = true
+                            }
+                        } label: {
+                            Label("Create Custom Pose", systemImage: "plus.square.dashed")
+                                .foregroundStyle(Color.yogaPrimary)
+                        }
                     }
-                )
+                }
+
+                // Pose library
+                Section {
+                    ForEach(filteredPoses) { pose in
+                        if allowMultiSelect {
+                            Button {
+                                toggleMultiSelect(pose.id)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Button {
+                                        selectedPoseForDetail = pose
+                                    } label: {
+                                        HStack(spacing: 12) {
+                                            PoseImageView(imageURL: pose.imageURL, size: 44, cornerRadius: 8)
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(pose.nameEnglish)
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                                    .foregroundStyle(.primary)
+
+                                                Text(pose.nameSanskrit)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+
+                                            Spacer()
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    Image(systemName: selectedPoseIds.contains(pose.id) ? "checkmark.circle.fill" : "circle")
+                                        .font(.title2)
+                                        .foregroundStyle(selectedPoseIds.contains(pose.id) ? Color.yogaPrimary : .secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            PosePickerRow(
+                                pose: pose,
+                                onTap: {
+                                    selectedPoseForDetail = pose
+                                },
+                                onAdd: {
+                                    addPose(pose)
+                                }
+                            )
+                        }
+                    }
+                }
             }
-            .navigationTitle("Add Pose")
+            .navigationTitle(allowMultiSelect ? "Select Poses" : "Add Pose")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search poses")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button(allowMultiSelect ? "Cancel" : "Done") {
                         dismiss()
                     }
                 }
             }
             .sheet(item: $selectedPoseForDetail) { pose in
                 PoseDetailSheet(pose: pose) {
-                    addPose(pose)
+                    if allowMultiSelect {
+                        selectedPoseIds.insert(pose.id)
+                    } else {
+                        addPose(pose)
+                    }
                     selectedPoseForDetail = nil
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if allowMultiSelect && !selectedPoseIds.isEmpty {
+                    HStack {
+                        Text("\(selectedPoseIds.count) pose\(selectedPoseIds.count > 1 ? "s" : "") selected")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Spacer()
+
+                        Button("Add Selected") {
+                            let selected = poses.filter { selectedPoseIds.contains($0.id) }
+                            onSelectMultiple?(selected)
+                            dismiss()
+                        }
+                        .font(.yogaHeadline())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.yogaPrimary)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                }
+            }
             .overlay(alignment: .bottom) {
-                if showingConfirmation {
+                if showingConfirmation && !allowMultiSelect {
                     confirmationBanner
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut, value: showingConfirmation)
+        }
+    }
+
+    private func toggleMultiSelect(_ poseId: String) {
+        if selectedPoseIds.contains(poseId) {
+            selectedPoseIds.remove(poseId)
+        } else {
+            selectedPoseIds.insert(poseId)
+        }
+    }
+
+    private func addCustomPose() {
+        let name = customPoseName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let customId = "custom-\(UUID().uuidString)"
+        let pose = Pose(
+            id: customId,
+            nameEnglish: name,
+            nameSanskrit: "",
+            description: "",
+            benefit: "",
+            sampleCues: [],
+            mechanics: .empty,
+            muscleGroup: "",
+            variations: [],
+            imageURL: "",
+            categories: ["Custom"],
+            difficulty: .beginner
+        )
+        onSelect(pose)
+        addedPoseName = name
+        customPoseName = ""
+        showingConfirmation = true
+        withAnimation { showingCustomPose = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation { showingConfirmation = false }
         }
     }
 
@@ -308,7 +459,7 @@ struct PoseDetailSheet: View {
 }
 
 #Preview {
-    PosePickerView(poses: MockPoseData.poses) { pose in
+    PosePickerView(poses: MockPoseData.poses, onSelect: { pose in
         print("Selected: \(pose.nameEnglish)")
-    }
+    })
 }

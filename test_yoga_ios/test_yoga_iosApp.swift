@@ -7,6 +7,7 @@
 
 import FirebaseAppCheck
 import FirebaseCore
+import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
 
@@ -21,6 +22,7 @@ struct test_yoga_iosApp: App {
         AppCheck.setAppCheckProviderFactory(DeviceCheckProviderFactory())
         #endif
         FirebaseApp.configure()
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         _authViewModel = State(initialValue: AuthViewModel())
     }
 
@@ -43,7 +45,11 @@ struct RootView: View {
             }
         }
         .onOpenURL { url in
-            GIDSignIn.sharedInstance.handle(url)
+            if url.scheme == "yogageek-spotify" {
+                MusicManager.shared.handleSpotifyURL(url)
+            } else {
+                GIDSignIn.sharedInstance.handle(url)
+            }
         }
         .animation(.easeInOut, value: authViewModel.isSignedIn)
     }

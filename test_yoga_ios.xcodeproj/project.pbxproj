@@ -14,6 +14,7 @@
 		5B88F1DD2F391724001287DE /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5B88F1DC2F391724001287DE /* GoogleSignIn */; };
 		5B88F1DF2F391724001287DE /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 5B88F1DE2F391724001287DE /* GoogleSignInSwift */; };
 		5B88F2D72F3BB1C0001287DE /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 5B88F2D62F3BB1C0001287DE /* FirebaseAppCheck */; };
+		5BC7D8D92F60BC47003C5D35 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5BC7D8D82F60BC47003C5D35 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 				5B88F1BF2F16C4F5001287DE /* FirebaseFirestore in Frameworks */,
 				5B88F1DF2F391724001287DE /* GoogleSignInSwift in Frameworks */,
 				5B88F2D72F3BB1C0001287DE /* FirebaseAppCheck in Frameworks */,
+				5BC7D8D92F60BC47003C5D35 /* FirebaseCrashlytics in Frameworks */,
 				5B88F1BD2F16C4F5001287DE /* FirebaseAuth in Frameworks */,
 				5B88F1B92F16C4F5001287DE /* FirebaseAI in Frameworks */,
 			);
@@ -80,6 +82,7 @@
 				5B88F1762F15AA19001287DE /* Sources */,
 				5B88F1772F15AA19001287DE /* Frameworks */,
 				5B88F1782F15AA19001287DE /* Resources */,
+				5BC7D8DA2F60BC6A003C5D35 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -97,6 +100,7 @@
 				5B88F1DC2F391724001287DE /* GoogleSignIn */,
 				5B88F1DE2F391724001287DE /* GoogleSignInSwift */,
 				5B88F2D62F3BB1C0001287DE /* FirebaseAppCheck */,
+				5BC7D8D82F60BC47003C5D35 /* FirebaseCrashlytics */,
 			);
 			productName = test_yoga_ios;
 			productReference = 5B88F17A2F15AA19001287DE /* test_yoga_ios.app */;
@@ -149,6 +153,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5BC7D8DA2F60BC6A003C5D35 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 8;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+				"$(SRCROOT)/test_yoga_ios/GoogleService-Info.plist",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5B88F1762F15AA19001287DE /* Sources */ = {
@@ -289,6 +316,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = XRM85DP47C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -303,6 +331,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				NEW_SETTING = "";
+				"OTHER_LDFLAGS[arch=*]" = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "changsun.test-yoga-ios";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -339,6 +369,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				NEW_SETTING = "";
+				"OTHER_LDFLAGS[arch=*]" = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = "changsun.test-yoga-ios";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -429,6 +461,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B88F1B72F16C4F5001287DE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAppCheck;
+		};
+		5BC7D8D82F60BC47003C5D35 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B88F1B72F16C4F5001287DE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

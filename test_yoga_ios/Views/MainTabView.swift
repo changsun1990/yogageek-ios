@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseAuth
 
 enum AppTab: String, CaseIterable {
+    case home = "Home"
     case explore = "Explore"
     case mySequences = "My Sequences"
     case community = "Community"
@@ -21,11 +22,22 @@ struct MainTabView: View {
     @State private var sequenceViewModel = SequenceViewModel()
     @State private var communityViewModel = CommunityViewModel()
     @State private var userProfile = UserProfile()
-    @State private var selectedTab: AppTab = .explore
+    @State private var selectedTab: AppTab = .home
     @State private var hasStartedListeners = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            Tab("Home", systemImage: "house", value: .home) {
+                HomeView(
+                    authViewModel: authViewModel,
+                    sequenceViewModel: sequenceViewModel,
+                    poseViewModel: poseViewModel,
+                    communityViewModel: communityViewModel,
+                    userProfile: userProfile,
+                    selectedTab: $selectedTab
+                )
+            }
+
             Tab("Explore", systemImage: "square.grid.2x2", value: .explore) {
                 ExploreView(poseViewModel: poseViewModel, sequenceViewModel: sequenceViewModel)
             }

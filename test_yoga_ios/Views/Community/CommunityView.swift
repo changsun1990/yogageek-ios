@@ -572,7 +572,7 @@ struct ShareSectionView: View {
     }
 
     private var formattedDuration: String {
-        let totalSeconds = section.duration
+        let totalSeconds = section.effectiveDuration
         let minutes = totalSeconds / 60
         if minutes > 0 {
             return "\(minutes) min"

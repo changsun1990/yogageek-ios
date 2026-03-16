@@ -41,4 +41,8 @@ extension Font {
     static func yogaHeadline(_ size: CGFloat = 17) -> Font {
         .system(size: size, weight: .semibold, design: .rounded)
     }
+
+    static func yogaAccent(_ size: CGFloat = 28) -> Font {
+        .system(size: size, weight: .medium, design: .serif)
+    }
 }

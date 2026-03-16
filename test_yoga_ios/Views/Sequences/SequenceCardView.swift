@@ -23,10 +23,19 @@ struct SequenceCardView: View {
                     .lineLimit(2)
             }
 
-            HStack(spacing: 16) {
-                Label("\(sequence.sections.count) sections", systemImage: "rectangle.stack")
-                Label("\(sequence.totalPoseCount) poses", systemImage: "figure.yoga")
+            HStack(spacing: 0) {
+                Label("\(sequence.sections.count)", systemImage: "rectangle.stack")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Label("\(sequence.totalPoseCount)", systemImage: "figure.yoga")
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Label(formattedDuration, systemImage: "clock")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Label(
+                    MusicManager.shared.activeService != .none ? "on" : "off",
+                    systemImage: MusicManager.shared.activeService != .none ? "music.note.list" : "music.note"
+                )
+                .foregroundStyle(MusicManager.shared.activeService != .none ? Color.yogaPrimary : .secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .font(.caption)
             .foregroundStyle(.secondary)

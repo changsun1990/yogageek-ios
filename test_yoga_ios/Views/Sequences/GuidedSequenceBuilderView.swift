@@ -49,8 +49,11 @@ struct GuidedSequenceBuilderView: View {
     @State private var sequenceName: String = ""
     @State private var selectedPoseForDetail: Pose?
     @State private var cachedRecommendedPoses: [Pose] = []
+    @State private var peakPoseTargetSectionIndex: Int?
+    @State private var showingPeakSectionPicker = false
+    @State private var autoPlacementMessage: String?
 
-    private let sectionNames = ["Beginning", "Flow 1", "Flow 2", "Ending"]
+    private let sectionNames = ["Integration", "Sun A", "Sun B", "Core", "Standing and Balance", "Hip and Spine", "Surrender"]
 
     init(viewModel: SequenceViewModel, poses: [Pose], groupName: String = "My Sequences", onSave: (() -> Void)? = nil) {
         self.viewModel = viewModel
@@ -102,15 +105,27 @@ struct GuidedSequenceBuilderView: View {
                 }
             }
             .sheet(isPresented: $showingPosePicker) {
-                PosePickerView(poses: poses) { pose in
-                    addPoseToCurrentSection(pose)
-                }
+                PosePickerView(
+                    poses: poses,
+                    onSelect: { pose in
+                        addPoseWithAutoPlacement(pose)
+                    },
+                    allowMultiSelect: true,
+                    onSelectMultiple: { selectedPoses in
+                        for pose in selectedPoses {
+                            addPoseWithAutoPlacement(pose)
+                        }
+                    }
+                )
             }
             .sheet(item: $selectedPoseForDetail) { pose in
                 PoseDetailSheet(pose: pose) {
-                    addPoseToCurrentSection(pose)
+                    addPoseWithAutoPlacement(pose)
                     selectedPoseForDetail = nil
                 }
+            }
+            .sheet(isPresented: $showingPeakSectionPicker) {
+                peakSectionPickerView
             }
             .onChange(of: currentSectionIndex) { _, _ in
                 updateRecommendedPoses()
@@ -315,15 +330,32 @@ struct GuidedSequenceBuilderView: View {
             Divider()
 
             // Info banner
-            if currentSectionIndex == 2 && startingPointChoice == .peakPoses {
+            if startingPointChoice == .peakPoses,
+               let targetIndex = peakPoseTargetSectionIndex,
+               currentSectionIndex == targetIndex {
                 HStack {
                     Image(systemName: "info.circle.fill")
                         .foregroundStyle(.blue)
-                    Text("Your peak poses have been added to Flow 2. You can adjust them anytime.")
+                    Text("Your peak poses have been added to \(sectionNames[targetIndex]). You can adjust them anytime.")
                         .font(.caption)
                 }
                 .padding()
                 .background(Color.blue.opacity(0.1))
+            }
+
+            // Auto-placement toast
+            if let message = autoPlacementMessage {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text(message)
+                        .font(.caption)
+                }
+                .padding(8)
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal)
+                .transition(.opacity)
             }
 
             // Section tabs
@@ -342,7 +374,7 @@ struct GuidedSequenceBuilderView: View {
     private var sectionTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(0..<4, id: \.self) { index in
+                ForEach(0..<sectionNames.count, id: \.self) { index in
                     Button {
                         currentSectionIndex = index
                     } label: {
@@ -382,7 +414,7 @@ struct GuidedSequenceBuilderView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 8) {
-                            ForEach(section.poses) { poseEntry in
+                            ForEach(Array(section.poses.enumerated()), id: \.element.id) { index, poseEntry in
                                 if let pose = poses.first(where: { $0.id == poseEntry.poseId }) {
                                     PoseRowInSection(
                                         pose: pose,
@@ -391,7 +423,17 @@ struct GuidedSequenceBuilderView: View {
                                         },
                                         onDelete: {
                                             removePoseFromSection(poseEntry.id)
-                                        }
+                                        },
+                                        onMoveUp: index > 0 ? {
+                                            withAnimation {
+                                                sequence.sections[currentSectionIndex].poses.swapAt(index, index - 1)
+                                            }
+                                        } : nil,
+                                        onMoveDown: index < section.poses.count - 1 ? {
+                                            withAnimation {
+                                                sequence.sections[currentSectionIndex].poses.swapAt(index, index + 1)
+                                            }
+                                        } : nil
                                     )
                                 }
                             }
@@ -432,7 +474,7 @@ struct GuidedSequenceBuilderView: View {
                                 selectedPoseForDetail = pose
                             },
                             onAdd: {
-                                addPoseToCurrentSection(pose)
+                                addPoseWithAutoPlacement(pose)
                             }
                         )
                     }
@@ -444,25 +486,36 @@ struct GuidedSequenceBuilderView: View {
         .background(Color.yogaCardBackground)
     }
 
-    private func generateRecommendedPoses() -> [Pose] {
-        // Return random poses based on section
-        let sectionPoses: [Pose]
+    private func categoriesForSection(_ index: Int) -> [PoseCategory] {
+        switch index {
+        case 0: return [.seated, .restorative, .prone]          // Integration
+        case 1: return [.standing, .forwardBend]                // Sun A
+        case 2: return [.standing, .backbend]                   // Sun B
+        case 3: return [.core, .prone]                          // Core
+        case 4: return [.standing, .balance, .armBalance]       // Standing and Balance
+        case 5: return [.hipOpener, .twist, .inversion, .bind]  // Hip and Spine
+        case 6: return [.restorative, .seated, .forwardBend]    // Surrender
+        default: return PoseCategory.allCases
+        }
+    }
 
-        switch currentSectionIndex {
-        case 0: // Beginning - easy poses
-            sectionPoses = poses.filter { $0.difficulty == .beginner }
-        case 1, 2: // Flow sections - mix based on selected category or all
-            if let category = selectedCategory {
-                sectionPoses = poses.filter { $0.categories.contains(category.rawValue) }
-            } else {
-                sectionPoses = poses.filter { $0.difficulty != .advanced }
+    private func generateRecommendedPoses() -> [Pose] {
+        let sectionCategories = categoriesForSection(currentSectionIndex)
+        let categoryStrings = sectionCategories.map { $0.rawValue }
+
+        var sectionPoses: [Pose]
+        if let category = selectedCategory {
+            sectionPoses = poses.filter { pose in
+                pose.categories.contains(category.rawValue) ||
+                pose.categories.contains(where: { categoryStrings.contains($0) })
             }
-        case 3: // Ending - restorative/seated poses
-            sectionPoses = poses.filter {
-                $0.categories.contains(PoseCategory.restorative.rawValue) ||
-                $0.categories.contains(PoseCategory.seated.rawValue)
+        } else {
+            sectionPoses = poses.filter { pose in
+                pose.categories.contains(where: { categoryStrings.contains($0) })
             }
-        default:
+        }
+
+        if sectionPoses.count < 6 {
             sectionPoses = poses
         }
 
@@ -493,7 +546,7 @@ struct GuidedSequenceBuilderView: View {
                 }
             }
 
-            if currentSectionIndex < 3 {
+            if currentSectionIndex < sectionNames.count - 1 {
                 Button {
                     withAnimation {
                         currentSectionIndex += 1
@@ -578,6 +631,10 @@ struct GuidedSequenceBuilderView: View {
     private func goToNextStep() {
         if let nextStep = GuidedBuilderStep(rawValue: currentStep.rawValue + 1) {
             if nextStep == .buildSections {
+                if startingPointChoice == .peakPoses && peakPoseTargetSectionIndex == nil {
+                    showingPeakSectionPicker = true
+                    return
+                }
                 initializeSections()
             }
             currentStep = nextStep
@@ -585,18 +642,15 @@ struct GuidedSequenceBuilderView: View {
     }
 
     private func initializeSections() {
-        // Create 4 sections
         var sections: [YogaSection] = sectionNames.map { YogaSection(name: $0) }
 
-        // If peak poses were selected, add them to Flow 2 (index 2)
-        if startingPointChoice == .peakPoses {
+        // If peak poses were selected, add them to the chosen section
+        if startingPointChoice == .peakPoses, let targetIndex = peakPoseTargetSectionIndex {
             let peakPoseEntries = selectedPoses.map { PoseEntry(poseId: $0) }
-            sections[2].poses = peakPoseEntries
+            sections[targetIndex].poses = peakPoseEntries
         }
 
         sequence = YogaSequence(sections: sections, group: groupName)
-
-        // Initialize recommended poses for the first section
         updateRecommendedPoses()
     }
 
@@ -608,6 +662,87 @@ struct GuidedSequenceBuilderView: View {
         }
     }
 
+    private func addPoseWithAutoPlacement(_ pose: Pose) {
+        guard startingPointChoice == .category else {
+            addPoseToCurrentSection(pose)
+            return
+        }
+
+        if let autoIndex = bestSectionIndex(for: pose), autoIndex < sequence.sections.count {
+            let poseEntry = PoseEntry(poseId: pose.id)
+            withAnimation {
+                sequence.sections[autoIndex].poses.append(poseEntry)
+            }
+            if autoIndex != currentSectionIndex {
+                autoPlacementMessage = "Added to \(sectionNames[autoIndex])"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation { autoPlacementMessage = nil }
+                }
+            }
+        } else {
+            addPoseToCurrentSection(pose)
+        }
+    }
+
+    private func bestSectionIndex(for pose: Pose) -> Int? {
+        let categoryToSection: [String: Int] = [
+            PoseCategory.seated.rawValue: 0,
+            PoseCategory.restorative.rawValue: 6,
+            PoseCategory.standing.rawValue: 4,
+            PoseCategory.balance.rawValue: 4,
+            PoseCategory.core.rawValue: 3,
+            PoseCategory.prone.rawValue: 3,
+            PoseCategory.hipOpener.rawValue: 5,
+            PoseCategory.twist.rawValue: 5,
+            PoseCategory.backbend.rawValue: 2,
+            PoseCategory.forwardBend.rawValue: 1,
+            PoseCategory.chest.rawValue: 2,
+            PoseCategory.armBalance.rawValue: 4,
+            PoseCategory.inversion.rawValue: 5,
+            PoseCategory.bind.rawValue: 5,
+        ]
+
+        if let category = selectedCategory, pose.categories.contains(category.rawValue) {
+            return categoryToSection[category.rawValue]
+        }
+
+        for cat in pose.categories {
+            if let sectionIdx = categoryToSection[cat] {
+                return sectionIdx
+            }
+        }
+
+        return nil
+    }
+
+    private var peakSectionPickerView: some View {
+        NavigationStack {
+            List {
+                ForEach(Array(sectionNames.enumerated()), id: \.offset) { index, name in
+                    Button {
+                        peakPoseTargetSectionIndex = index
+                        showingPeakSectionPicker = false
+                        initializeSections()
+                        currentStep = .buildSections
+                    } label: {
+                        HStack {
+                            Text(name)
+                                .font(.subheadline)
+                            Spacer()
+                            if peakPoseTargetSectionIndex == index {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(Color.yogaPrimary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Place Peak Poses In")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium])
+    }
+
     private func removePoseFromSection(_ poseEntryId: String) {
         guard currentSectionIndex < sequence.sections.count else { return }
         withAnimation {
@@ -617,6 +752,9 @@ struct GuidedSequenceBuilderView: View {
 
     private func saveSequence() {
         sequence.name = sequenceName
+        if let duration = selectedDuration {
+            sequence.targetDuration = duration.rawValue * 60
+        }
         viewModel.addSequence(sequence)
         onSave?()
         dismiss()
@@ -768,9 +906,33 @@ struct PoseRowInSection: View {
     let pose: Pose
     let onTap: () -> Void
     let onDelete: () -> Void
+    var onMoveUp: (() -> Void)?
+    var onMoveDown: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
+            // Move up/down buttons
+            VStack(spacing: 4) {
+                Button {
+                    onMoveUp?()
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.caption)
+                        .foregroundStyle(onMoveUp != nil ? Color.yogaPrimary : Color(.systemGray4))
+                }
+                .disabled(onMoveUp == nil)
+
+                Button {
+                    onMoveDown?()
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(onMoveDown != nil ? Color.yogaPrimary : Color(.systemGray4))
+                }
+                .disabled(onMoveDown == nil)
+            }
+            .buttonStyle(.plain)
+
             // Tappable area for details
             Button(action: onTap) {
                 HStack(spacing: 12) {

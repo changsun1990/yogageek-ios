@@ -17,9 +17,14 @@ struct SectionEditorView: View {
     var onMoveUp: (() -> Void)?
     var onMoveDown: (() -> Void)?
     var onShare: (() -> Void)?
+    var onPractice: (() -> Void)?
+    var onCopyToNew: (() -> Void)?
+    var onCopyToExisting: (() -> Void)?
 
     @State private var isExpanded = true
     @State private var draggingPoseId: String?
+    @State private var showingDurationInput = false
+    @State private var durationMinutesText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,13 +53,31 @@ struct SectionEditorView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text(formattedDuration)
-                    .font(.caption)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showingDurationInput.toggle()
+                        if showingDurationInput {
+                            let minutes = (section.sectionDuration ?? section.poseDuration) / 60
+                            durationMinutesText = minutes > 0 ? "\(minutes)" : ""
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(formattedDuration)
+                            .font(.caption)
+                            .fontWeight(section.sectionDuration != nil ? .medium : .regular)
+                            .foregroundStyle(section.sectionDuration != nil ? .white : .primary)
+                        Image(systemName: "pencil")
+                            .font(.system(size: 8))
+                            .foregroundStyle(section.sectionDuration != nil ? .white.opacity(0.8) : .secondary)
+                    }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color(.systemGray5))
+                    .background(section.sectionDuration != nil ? Color.yogaPrimary.opacity(0.85) : Color(.systemGray5))
                     .clipShape(Capsule())
-                    .padding(.leading, 4)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 4)
 
                 // Section actions menu
                 Menu {
@@ -77,11 +100,37 @@ struct SectionEditorView: View {
                         Divider()
                     }
 
-                    if let share = onShare, !section.poses.isEmpty {
-                        Button {
-                            share()
-                        } label: {
-                            Label("Share Section", systemImage: "square.and.arrow.up")
+                    if !section.poses.isEmpty {
+                        if let practice = onPractice {
+                            Button {
+                                practice()
+                            } label: {
+                                Label("Practice Section", systemImage: "play.fill")
+                            }
+                        }
+
+                        if let share = onShare {
+                            Button {
+                                share()
+                            } label: {
+                                Label("Share Section", systemImage: "square.and.arrow.up")
+                            }
+                        }
+
+                        if let copyToNew = onCopyToNew {
+                            Button {
+                                copyToNew()
+                            } label: {
+                                Label("Copy to New Sequence", systemImage: "doc.badge.plus")
+                            }
+                        }
+
+                        if let copyToExisting = onCopyToExisting {
+                            Button {
+                                copyToExisting()
+                            } label: {
+                                Label("Copy to Existing Sequence", systemImage: "arrow.right.doc.on.clipboard")
+                            }
                         }
                     }
 
@@ -99,6 +148,11 @@ struct SectionEditorView: View {
             }
             .padding(.horizontal, 8)
             .background(Color(.systemGray6))
+
+            // Inline duration editor
+            if showingDurationInput {
+                sectionDurationEditor
+            }
 
             // Section content
             if isExpanded {
@@ -138,6 +192,20 @@ struct SectionEditorView: View {
                                     onMoveDown: isLast ? nil : {
                                         if let idx = section.poses.firstIndex(where: { $0.id == poseEntry.id }), idx < section.poses.count - 1 {
                                             withAnimation { section.poses.swapAt(idx, idx + 1) }
+                                        }
+                                    },
+                                    onDuplicate: {
+                                        let original = poseEntry
+                                        let duplicate = PoseEntry(
+                                            poseId: original.poseId,
+                                            customCues: original.customCues,
+                                            notes: original.notes,
+                                            duration: original.duration,
+                                            customName: original.customName,
+                                            breath: original.breath
+                                        )
+                                        if let idx = section.poses.firstIndex(where: { $0.id == poseEntry.id }) {
+                                            withAnimation { section.poses.insert(duplicate, at: idx + 1) }
                                         }
                                     },
                                     onDelete: {
@@ -184,8 +252,85 @@ struct SectionEditorView: View {
         )
     }
 
+    private var sectionDurationEditor: some View {
+        HStack(spacing: 12) {
+            // Toggle custom duration
+            Toggle(isOn: Binding(
+                get: { section.sectionDuration != nil },
+                set: { enabled in
+                    if enabled {
+                        let poseTotal = section.poseDuration
+                        section.sectionDuration = poseTotal > 0 ? poseTotal : 300
+                        durationMinutesText = "\((section.sectionDuration ?? 300) / 60)"
+                    } else {
+                        section.sectionDuration = nil
+                    }
+                }
+            )) {
+                Text("Custom")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+
+            if section.sectionDuration != nil {
+                HStack(spacing: 6) {
+                    Button {
+                        let current = section.sectionDuration ?? 0
+                        section.sectionDuration = max(0, current - 60)
+                        durationMinutesText = "\((section.sectionDuration ?? 0) / 60)"
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+
+                    TextField("0", text: $durationMinutesText)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 40)
+                        .padding(.vertical, 4)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .onChange(of: durationMinutesText) { _, newValue in
+                            if let minutes = Int(newValue) {
+                                section.sectionDuration = minutes * 60
+                            }
+                        }
+
+                    Text("min")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        let current = section.sectionDuration ?? 0
+                        section.sectionDuration = min(7200, current + 60)
+                        durationMinutesText = "\((section.sectionDuration ?? 0) / 60)"
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.body)
+                            .foregroundStyle(Color.yogaPrimary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else if section.poseDuration > 0 {
+                Text("From poses: \(section.poseDuration / 60)m \(section.poseDuration % 60)s")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.yogaPrimary.opacity(0.05))
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
     private var formattedDuration: String {
-        let totalSeconds = section.duration
+        let totalSeconds = section.effectiveDuration
         if totalSeconds == 0 {
             return "-"
         }
@@ -206,9 +351,17 @@ struct PoseRowView: View {
     let onTap: () -> Void
     var onMoveUp: (() -> Void)?
     var onMoveDown: (() -> Void)?
+    var onDuplicate: (() -> Void)?
     let onDelete: () -> Void
 
     @State private var isExpanded = false
+    @State private var durationInputText = ""
+    @State private var durationUnit: DurationUnit = .seconds
+
+    enum DurationUnit: String, CaseIterable {
+        case seconds = "sec"
+        case minutes = "min"
+    }
 
     private var durationText: String {
         if let duration = poseEntry.duration {
@@ -221,7 +374,7 @@ struct PoseRowView: View {
             }
             return "\(seconds)s"
         }
-        return "No time"
+        return ""
     }
 
     var body: some View {
@@ -231,11 +384,20 @@ struct PoseRowView: View {
                 // Tappable pose info
                 Button(action: onTap) {
                     HStack(spacing: 12) {
-                        PoseImageView(imageURL: pose?.imageURL ?? "questionmark.circle", size: 50, cornerRadius: 10)
-                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                        if let pose, !pose.imageURL.isEmpty {
+                            PoseImageView(imageURL: pose.imageURL, size: 50, cornerRadius: 10)
+                                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                        } else {
+                            Image(systemName: "figure.yoga")
+                                .font(.title3)
+                                .foregroundStyle(Color.yogaPrimary)
+                                .frame(width: 50, height: 50)
+                                .background(Color.yogaPrimary.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(pose?.nameEnglish ?? "Unknown Pose")
+                            Text(pose?.nameEnglish ?? poseEntry.customName ?? "Unknown Pose")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
@@ -243,6 +405,12 @@ struct PoseRowView: View {
 
                             if let sanskrit = pose?.nameSanskrit, !sanskrit.isEmpty {
                                 Text(sanskrit)
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                    .italic()
+                                    .lineLimit(1)
+                            } else if poseEntry.customName != nil {
+                                Text("Custom pose")
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
                                     .italic()
@@ -255,7 +423,7 @@ struct PoseRowView: View {
 
                 Spacer()
 
-                // Duration badge
+                // Duration badge (read-only, tap row + to edit)
                 if poseEntry.duration != nil {
                     Text(durationText)
                         .font(.caption)
@@ -263,16 +431,16 @@ struct PoseRowView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(Color.yogaPrimary.opacity(0.85))
-                        )
+                        .background(Capsule().fill(Color.yogaPrimary.opacity(0.85)))
                 }
 
-                // Expand/collapse button for details
+                // Expand/collapse button for details (duration, cues, notes)
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         isExpanded.toggle()
+                        if isExpanded {
+                            syncDurationInput()
+                        }
                     }
                 } label: {
                     Image(systemName: isExpanded ? "minus.circle.fill" : "plus.circle.fill")
@@ -284,30 +452,6 @@ struct PoseRowView: View {
 
                 // Options menu
                 Menu {
-                    // Duration options
-                    Menu {
-                        Button {
-                            poseEntry.duration = nil
-                        } label: {
-                            Label("No duration", systemImage: poseEntry.duration == nil ? "checkmark" : "")
-                        }
-
-                        Divider()
-
-                        ForEach([15, 30, 45, 60, 90, 120, 180, 300], id: \.self) { seconds in
-                            Button {
-                                poseEntry.duration = seconds
-                            } label: {
-                                let label = seconds < 60 ? "\(seconds) seconds" : "\(seconds / 60) minute\(seconds >= 120 ? "s" : "")"
-                                Label(label, systemImage: poseEntry.duration == seconds ? "checkmark" : "")
-                            }
-                        }
-                    } label: {
-                        Label("Set Duration", systemImage: "clock")
-                    }
-
-                    Divider()
-
                     if let moveUp = onMoveUp {
                         Button { moveUp() } label: {
                             Label("Move Up", systemImage: "arrow.up")
@@ -321,6 +465,14 @@ struct PoseRowView: View {
                     }
 
                     if onMoveUp != nil || onMoveDown != nil {
+                        Divider()
+                    }
+
+                    if let duplicate = onDuplicate {
+                        Button { duplicate() } label: {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                        }
+
                         Divider()
                     }
 
@@ -340,7 +492,7 @@ struct PoseRowView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
-            // Expanded content - Details
+            // Expanded content - Duration, Cues, Notes
             if isExpanded {
                 VStack(alignment: .leading, spacing: 14) {
                     // Divider with gradient
@@ -354,6 +506,75 @@ struct PoseRowView: View {
                         )
                         .frame(height: 1)
                         .padding(.horizontal, 14)
+
+                    // Duration section
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Duration", systemImage: "clock")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 8) {
+                            TextField("0", text: $durationInputText)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 50)
+                                .padding(.vertical, 6)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .onChange(of: durationInputText) { _, newValue in
+                                    if let value = Int(newValue), value > 0 {
+                                        poseEntry.duration = durationUnit == .minutes ? value * 60 : value
+                                    } else if newValue.isEmpty {
+                                        poseEntry.duration = nil
+                                    }
+                                }
+
+                            Picker("", selection: $durationUnit) {
+                                ForEach(DurationUnit.allCases, id: \.self) { unit in
+                                    Text(unit.rawValue).tag(unit)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 100)
+                            .onChange(of: durationUnit) { _, newUnit in
+                                if let value = Int(durationInputText), value > 0 {
+                                    poseEntry.duration = newUnit == .minutes ? value * 60 : value
+                                }
+                            }
+
+                            Spacer()
+
+                            if poseEntry.duration != nil {
+                                Button {
+                                    poseEntry.duration = nil
+                                    durationInputText = ""
+                                } label: {
+                                    Text("Clear")
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 14)
+
+                    // Breath section
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Breath", systemImage: "wind")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 8) {
+                            breathOption("Inhale")
+                            breathOption("Exhale")
+                        }
+                    }
+                    .padding(.horizontal, 14)
 
                     // Custom cues section
                     VStack(alignment: .leading, spacing: 6) {
@@ -396,6 +617,45 @@ struct PoseRowView: View {
             }
         }
         .background(Color.yogaCardBackground)
+    }
+
+    private func breathOption(_ label: String) -> some View {
+        let isSelected = poseEntry.breath == label
+        return Button {
+            poseEntry.breath = isSelected ? "" : label
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: label == "Inhale" ? "arrow.down" : "arrow.up")
+                    .font(.caption2)
+                Text(label)
+                    .font(.subheadline)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.yogaPrimary.opacity(0.15) : Color(.systemGray6))
+            .foregroundStyle(isSelected ? Color.yogaPrimary : .primary)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.yogaPrimary : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func syncDurationInput() {
+        if let d = poseEntry.duration {
+            if d >= 60 && d % 60 == 0 {
+                durationUnit = .minutes
+                durationInputText = "\(d / 60)"
+            } else {
+                durationUnit = .seconds
+                durationInputText = "\(d)"
+            }
+        } else {
+            durationUnit = .seconds
+            durationInputText = ""
+        }
     }
 }
 

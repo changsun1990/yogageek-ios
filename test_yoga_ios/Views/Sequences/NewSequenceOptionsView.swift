@@ -11,6 +11,7 @@ enum SequenceCreationOption: Identifiable {
     case guided
     case selfCreate
     case copyExisting
+    case fromTemplate
 
     var id: Self { self }
 }
@@ -64,6 +65,16 @@ struct NewSequenceOptionsView: View {
                     ) {
                         selectedOption = .copyExisting
                     }
+
+                    // Option 4: From template
+                    OptionCard(
+                        icon: "bookmark.fill",
+                        title: "From Template",
+                        description: "Start from one of your saved templates",
+                        isComingSoon: viewModel.templates.isEmpty
+                    ) {
+                        selectedOption = .fromTemplate
+                    }
                 }
                 .padding(.horizontal)
 
@@ -106,6 +117,16 @@ struct NewSequenceOptionsView: View {
                     )
                 case .copyExisting:
                     CopyFromExistingView(
+                        viewModel: viewModel,
+                        poses: poses,
+                        groupName: groupName,
+                        communityViewModel: communityViewModel,
+                        onSave: {
+                            shouldDismissAfterSave = true
+                        }
+                    )
+                case .fromTemplate:
+                    TemplatePickerView(
                         viewModel: viewModel,
                         poses: poses,
                         groupName: groupName,

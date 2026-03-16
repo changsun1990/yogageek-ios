@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AVFoundation
+import MediaPlayer
 
 struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +15,13 @@ struct PracticeView: View {
     @State private var musicManager = MusicManager.shared
     @State private var showingMusicPicker = false
     @State private var goingForward = true
+    @State private var voiceService = VoiceCommandService()
+    @State private var voiceEnabled = false
+    @State private var voiceCommandFeedback: String? = nil
+    @State private var showVoiceHelp = false
+    // Voice ducking: lowers system output volume while the user is speaking
+    @State private var duckOutputVolume: Float = 1.0
+    @State private var savedOutputVolume: Float = 1.0
 
     init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
         _viewModel = State(initialValue: PracticeViewModel(sequence: sequence, poses: poses, startAtSection: startAtSection))
@@ -24,6 +33,12 @@ struct PracticeView: View {
                 ZStack {
                     Color.yogaSurface.ignoresSafeArea()
 
+                    // Hidden MPVolumeView — must be in the hierarchy for volume control to work
+                    VolumeSliderView(volume: duckOutputVolume)
+                        .frame(width: 1, height: 1)
+                        .opacity(0.001)
+                        .allowsHitTesting(false)
+
                     if viewModel.isComplete {
                         completionView
                     } else if geo.size.width > geo.size.height {
@@ -31,15 +46,43 @@ struct PracticeView: View {
                     } else {
                         portraitLayout(geo: geo)
                     }
+
+                    if let feedback = voiceCommandFeedback {
+                        VStack {
+                            Spacer()
+                            Text(feedback)
+                                .font(.caption.weight(.medium))
+                                .padding(.horizontal, 14).padding(.vertical, 7)
+                                .background(.regularMaterial)
+                                .clipShape(Capsule())
+                                .padding(.bottom, 110)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingMusicPicker) {
                 MusicPickerView(musicManager: musicManager)
             }
+            .sheet(isPresented: $showVoiceHelp) {
+                VoiceCommandHelpView()
+            }
             .onDisappear {
+                voiceService.stop()
+                viewModel.announcementEnabled = true
+                duckOutputVolume = savedOutputVolume
                 if musicManager.activeService == .appleMusic {
                     musicManager.stop()
+                }
+            }
+            .onChange(of: voiceService.isSpeaking) { _, speaking in
+                guard musicManager.activeService != .none else { return }
+                if speaking {
+                    savedOutputVolume = AVAudioSession.sharedInstance().outputVolume
+                    duckOutputVolume = max(0.05, savedOutputVolume * 0.25)
+                } else {
+                    duckOutputVolume = savedOutputVolume
                 }
             }
         }
@@ -146,6 +189,12 @@ struct PracticeView: View {
                         .font(.subheadline)
                         .foregroundStyle(musicManager.activeService != .none ? Color.yogaPrimary : .secondary)
                 }
+
+                Button { Task { await toggleVoice() } } label: {
+                    Image(systemName: voiceEnabled ? "microphone.fill" : "microphone.slash")
+                        .font(.subheadline)
+                        .foregroundStyle(voiceEnabled ? Color.yogaPrimary : .secondary)
+                }
             }
 
             Spacer()
@@ -163,39 +212,39 @@ struct PracticeView: View {
     }
 
     private var counterText: String {
-        switch viewModel.currentTimingMode {
-        case .perPose:
-            return "\(viewModel.currentPoseNumber) of \(viewModel.totalPoses)"
-        case .sectionLevel, .flow:
-            return "Section \(viewModel.currentSectionIndex + 1) of \(viewModel.totalSections)"
+        if viewModel.isSectionPractice {
+            return "\(viewModel.currentPoseIndexInSection) of \(viewModel.totalPosesInSection)"
         }
+        return "\(viewModel.currentPoseNumber) of \(viewModel.totalPoses)"
     }
 
     @ViewBuilder
     private var timerPill: some View {
-        if viewModel.currentTimingMode == .perPose && viewModel.currentPoseIsTimed {
-            timerCapsule(seconds: viewModel.timeRemaining)
-        } else if viewModel.currentTimingMode == .sectionLevel {
-            timerCapsule(seconds: viewModel.sectionTimeRemaining)
+        let total = viewModel.sessionTotalDuration
+        if total > 0 {
+            // Countdown from total session duration
+            timerCapsule(seconds: max(0, total - viewModel.sessionTimeElapsed))
         } else {
-            Image(systemName: "infinity")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(uiColor: .systemGray5))
-                .clipShape(Capsule())
+            // No duration defined — show elapsed time
+            timerCapsule(seconds: viewModel.sessionTimeElapsed, countUp: true)
         }
     }
 
-    private func timerCapsule(seconds: Int) -> some View {
-        Text(formatTime(seconds))
-            .font(.subheadline.monospacedDigit())
-            .fontWeight(.medium)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color(uiColor: .systemGray5))
-            .clipShape(Capsule())
+    private func timerCapsule(seconds: Int, countUp: Bool = false) -> some View {
+        HStack(spacing: 3) {
+            if countUp {
+                Image(systemName: "timer")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Text(formatTime(seconds))
+                .font(.subheadline.monospacedDigit())
+                .fontWeight(.medium)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color(uiColor: .systemGray5))
+        .clipShape(Capsule())
     }
 
     private func formatTime(_ seconds: Int) -> String {
@@ -299,6 +348,8 @@ struct PracticeView: View {
             // English name — large, light-weight, serif
             Text(currentPoseName)
                 .font(.system(size: 44, weight: .light, design: .serif))
+                .minimumScaleFactor(0.55)
+                .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .id(viewModel.currentIndex)
                 .transition(.opacity)
@@ -390,6 +441,59 @@ struct PracticeView: View {
             }
     }
 
+    // MARK: - Voice Commands
+
+    private func toggleVoice() async {
+        if voiceEnabled {
+            voiceService.stop()
+            voiceEnabled = false
+            viewModel.announcementEnabled = true
+            duckOutputVolume = savedOutputVolume
+        } else {
+            let granted = await voiceService.requestPermissions()
+            if granted {
+                // Mute TTS while voice commands are active — both compete for the
+                // same AVAudioSession and AVSpeechSynthesizer triggers !pri errors.
+                viewModel.announcementEnabled = false
+                voiceService.onCommand = { command in
+                    handleVoiceCommand(command)
+                }
+                voiceService.start()
+                voiceEnabled = true
+                showVoiceHelp = true
+            }
+        }
+    }
+
+    private func handleVoiceCommand(_ command: VoiceCommand) {
+        let label: String
+        switch command {
+        case .next:
+            label = "▶ Next"
+            goingForward = true
+            viewModel.next()
+        case .previous:
+            label = "◀ Back"
+            goingForward = false
+            viewModel.previous()
+        case .pause:
+            label = "⏸ Pause"
+            viewModel.pause()
+        case .resume:
+            label = "▶ Resume"
+            viewModel.play()
+        }
+        showFeedback(label)
+    }
+
+    private func showFeedback(_ text: String) {
+        withAnimation { voiceCommandFeedback = text }
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            withAnimation { voiceCommandFeedback = nil }
+        }
+    }
+
     // MARK: - Completion
 
     private var completionView: some View {
@@ -437,6 +541,111 @@ struct PracticeView: View {
             .padding(.horizontal, 28)
             .padding(.bottom, 32)
         }
+    }
+}
+
+// MARK: - Volume Slider (MPVolumeView wrapper)
+
+/// Invisible UIViewRepresentable that exposes MPVolumeView's system-volume slider.
+/// Must be in the live view hierarchy for the slider to be populated — we hide it
+/// with opacity(0.001) and a 1×1 frame.
+private struct VolumeSliderView: UIViewRepresentable {
+    var volume: Float
+
+    func makeUIView(context: Context) -> MPVolumeView { MPVolumeView() }
+
+    func updateUIView(_ uiView: MPVolumeView, context: Context) {
+        // Defer one run-loop so the subviews are laid out before we access them.
+        DispatchQueue.main.async {
+            (uiView.subviews.compactMap { $0 as? UISlider }.first)?.value = volume
+        }
+    }
+}
+
+// MARK: - Voice Command Help Sheet
+
+private struct VoiceCommandHelpView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let commands: [(icon: String, words: String, action: String)] = [
+        ("forward.end.fill",  "\"next\" · \"forward\"",               "Advance to next pose"),
+        ("backward.end.fill", "\"back\" · \"previous\"",              "Go to previous pose"),
+        ("pause.fill",        "\"pause\" · \"hold\" · \"stop\"",      "Pause the timer"),
+        ("play.fill",         "\"play\" · \"resume\" · \"continue\"", "Resume the timer"),
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Handle
+            Capsule()
+                .fill(Color(uiColor: .systemGray4))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+
+            Image(systemName: "microphone.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(Color.yogaPrimary)
+                .padding(.bottom, 8)
+
+            Text("Voice Commands")
+                .font(.title3.weight(.semibold))
+                .padding(.bottom, 4)
+
+            Text("Speak these words while the mic is active")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 24)
+
+            VStack(spacing: 0) {
+                ForEach(commands, id: \.words) { cmd in
+                    HStack(spacing: 14) {
+                        Image(systemName: cmd.icon)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.yogaPrimary)
+                            .frame(width: 22)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(cmd.words)
+                                .font(.subheadline.weight(.medium))
+                            Text(cmd.action)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+
+                    if cmd.words != commands.last?.words {
+                        Divider().padding(.leading, 56)
+                    }
+                }
+            }
+            .background(Color.yogaCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 20)
+
+            Button {
+                dismiss()
+            } label: {
+                Text("Got it")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.yogaPrimary)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
+            Spacer()
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.hidden)
     }
 }
 

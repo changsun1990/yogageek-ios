@@ -56,7 +56,7 @@ struct SequenceListView: View {
                                                 .font(.yogaHeadline())
                                                 .foregroundStyle(.primary)
 
-                                            let count = viewModel.sequences.filter { $0.group == group }.count
+                                            let count = viewModel.sequences.filter { $0.group == group && !$0.isTemplate }.count
                                             Text("\(count) sequence\(count == 1 ? "" : "s")")
                                                 .font(.caption)
                                                 .foregroundStyle(.secondary)
@@ -82,7 +82,7 @@ struct SequenceListView: View {
                                 // Expanded content - sequences
                                 if expandedGroups.contains(group) {
                                     let groupSequences = viewModel.sequences
-                                        .filter { $0.group == group }
+                                        .filter { $0.group == group && !$0.isTemplate }
                                         .sorted { $0.updatedAt > $1.updatedAt }
 
                                     ForEach(groupSequences) { sequence in
@@ -120,6 +120,20 @@ struct SequenceListView: View {
                                                 showingShareSheet = true
                                             } label: {
                                                 Label("Share to Community", systemImage: "square.and.arrow.up")
+                                            }
+
+                                            Divider()
+
+                                            Button {
+                                                viewModel.duplicateSequence(sequence)
+                                            } label: {
+                                                Label("Copy to New", systemImage: "doc.on.doc")
+                                            }
+
+                                            Button {
+                                                viewModel.saveAsTemplate(sequence)
+                                            } label: {
+                                                Label("Save as Template", systemImage: "bookmark")
                                             }
 
                                             Divider()

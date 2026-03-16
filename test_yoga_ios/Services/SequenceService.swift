@@ -233,10 +233,12 @@ class SequenceService {
                     poseId: poseId,
                     customCues: poseData["customCues"] as? [String] ?? [],
                     notes: poseData["notes"] as? String ?? "",
-                    duration: poseData["duration"] as? Int
+                    duration: poseData["duration"] as? Int,
+                    customName: poseData["customName"] as? String,
+                    breath: poseData["breath"] as? String ?? ""
                 )
             }
-            return YogaSection(id: sectionId, name: sectionName, poses: poses)
+            return YogaSection(id: sectionId, name: sectionName, poses: poses, sectionDuration: sectionData["sectionDuration"] as? Int)
         }
 
         let createdAt: Date
@@ -260,7 +262,9 @@ class SequenceService {
             sections: sections,
             group: data["group"] as? String ?? "My Sequences",
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            targetDuration: data["targetDuration"] as? Int ?? 0,
+            isTemplate: data["isTemplate"] as? Bool ?? false
         )
     }
 
@@ -337,21 +341,29 @@ class SequenceService {
                     "id": pose.id,
                     "poseId": pose.poseId,
                     "customCues": pose.customCues,
-                    "notes": pose.notes
+                    "notes": pose.notes,
+                    "breath": pose.breath
                 ]
                 if let duration = pose.duration {
                     poseData["duration"] = duration
                 }
+                if let customName = pose.customName {
+                    poseData["customName"] = customName
+                }
                 return poseData
             }
-            return [
+            var sectionData: [String: Any] = [
                 "id": section.id,
                 "name": section.name,
                 "poses": poses
             ]
+            if let sectionDuration = section.sectionDuration {
+                sectionData["sectionDuration"] = sectionDuration
+            }
+            return sectionData
         }
 
-        return [
+        var data: [String: Any] = [
             "name": sequence.name,
             "description": sequence.description,
             "sections": sections,
@@ -359,6 +371,13 @@ class SequenceService {
             "createdAt": Timestamp(date: sequence.createdAt),
             "updatedAt": Timestamp(date: sequence.updatedAt)
         ]
+        if sequence.targetDuration > 0 {
+            data["targetDuration"] = sequence.targetDuration
+        }
+        if sequence.isTemplate {
+            data["isTemplate"] = true
+        }
+        return data
     }
 
     private static func parseSequenceFromMap(_ data: [String: Any]) -> YogaSequence {
@@ -374,10 +393,12 @@ class SequenceService {
                     poseId: poseId,
                     customCues: poseData["customCues"] as? [String] ?? [],
                     notes: poseData["notes"] as? String ?? "",
-                    duration: poseData["duration"] as? Int
+                    duration: poseData["duration"] as? Int,
+                    customName: poseData["customName"] as? String,
+                    breath: poseData["breath"] as? String ?? ""
                 )
             }
-            return YogaSection(id: sectionId, name: sectionName, poses: poses)
+            return YogaSection(id: sectionId, name: sectionName, poses: poses, sectionDuration: sectionData["sectionDuration"] as? Int)
         }
 
         let createdAt: Date
@@ -400,7 +421,9 @@ class SequenceService {
             sections: sections,
             group: data["group"] as? String ?? "My Sequences",
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            targetDuration: data["targetDuration"] as? Int ?? 0,
+            isTemplate: data["isTemplate"] as? Bool ?? false
         )
     }
 }

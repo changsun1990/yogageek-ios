@@ -12,6 +12,24 @@
 				<string>com.googleusercontent.apps.384033958600-ucf6d3r0l46f8g4t0jkgvl179voi0416</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>yogageek-spotify</string>
+			</array>
+		</dict>
 	</array>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Play your music playlists during yoga practice sessions.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>spotify</string>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>YogaGeek uses the microphone to listen for voice commands like "next" during practice, so you can advance poses hands-free.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>YogaGeek uses speech recognition to detect voice commands during practice. No audio is stored by YogaGeek.</string>
 </dict>
 </plist>
