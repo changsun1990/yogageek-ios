@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct PoseDetailView: View {
     let pose: Pose
@@ -16,6 +17,8 @@ struct PoseDetailView: View {
     @State private var showingConfirmation = false
     @State private var confirmationMessage = ""
     @State private var showingFullscreenImage = false
+    @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @State private var audioPlayer: AVPlayer?
 
     var body: some View {
         ScrollView {
@@ -35,6 +38,23 @@ struct PoseDetailView: View {
                         Text(pose.nameSanskrit)
                             .font(.title3)
                             .foregroundStyle(.secondary)
+
+                        if !pose.pronunciation.isEmpty {
+                            Button {
+                                playPronunciation()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(pose.pronunciation)
+                                        .italic()
+                                    Image(systemName: "speaker.wave.2.fill")
+                                        .foregroundStyle(Color.yogaPrimary)
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Hear pronunciation of \(pose.nameSanskrit)")
+                        }
                     }
 
                     HStack(spacing: 12) {
@@ -220,6 +240,38 @@ struct PoseDetailView: View {
         .fullScreenCover(isPresented: $showingFullscreenImage) {
             FullscreenImageView(imageURL: pose.imageURL, poseName: pose.nameEnglish)
         }
+        .onDisappear {
+            speechSynthesizer.stopSpeaking(at: .immediate)
+            audioPlayer?.pause()
+        }
+    }
+
+    private func playPronunciation() {
+        // Prefer the recorded clip; the on-device voice covers poses without one
+        guard !pose.pronunciationAudioURL.isEmpty, let url = URL(string: pose.pronunciationAudioURL) else {
+            speakPronunciation()
+            return
+        }
+
+        speechSynthesizer.stopSpeaking(at: .immediate)
+        let player = AVPlayer(url: url)
+        audioPlayer = player
+        player.play()
+    }
+
+    private func speakPronunciation() {
+        speechSynthesizer.stopSpeaking(at: .immediate)
+
+        // Lowercase so stressed syllables like "DAH" aren't spelled out letter by letter
+        let utterance = AVSpeechUtterance(string: pose.pronunciation.lowercased())
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.8
+        // Same voice choice as practice mode: highest-quality installed en-US voice
+        utterance.voice = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == "en-US" }
+            .max(by: { $0.quality.rawValue < $1.quality.rawValue })
+            ?? AVSpeechSynthesisVoice(language: "en-US")
+
+        speechSynthesizer.speak(utterance)
     }
 
     // Find a pose by name (case-insensitive, partial match), excluding the current pose

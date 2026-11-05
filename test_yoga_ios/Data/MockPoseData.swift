@@ -13,6 +13,8 @@ struct MockPoseData {
             id: "mountain",
             nameEnglish: "Mountain Pose",
             nameSanskrit: "Tadasana",
+            pronunciation: "tah-DAH-sah-nah",
+            pronunciationAudioURL: "",
             description: "The foundation of all standing poses. Stand tall with feet together or hip-width apart, arms at sides.",
             benefit: "Improves posture, strengthens thighs, knees, and ankles, increases awareness and steadiness",
             sampleCues: [
@@ -31,6 +33,8 @@ struct MockPoseData {
             id: "downward-dog",
             nameEnglish: "Downward-Facing Dog",
             nameSanskrit: "Adho Mukha Svanasana",
+            pronunciation: "AH-doh MOO-kah shvah-NAH-sah-nah",
+            pronunciationAudioURL: "",
             description: "An essential yoga pose that stretches the entire back body.",
             benefit: "Stretches shoulders, hamstrings, calves, and hands. Strengthens arms and legs. Calms the brain.",
             sampleCues: [
@@ -49,6 +53,8 @@ struct MockPoseData {
             id: "warrior-1",
             nameEnglish: "Warrior I",
             nameSanskrit: "Virabhadrasana I",
+            pronunciation: "veer-ah-bah-DRAH-sah-nah",
+            pronunciationAudioURL: "",
             description: "A powerful standing pose that builds strength and stability.",
             benefit: "Strengthens legs, back, and arms. Stretches chest, lungs, and shoulders. Improves focus and balance.",
             sampleCues: [
@@ -67,6 +73,8 @@ struct MockPoseData {
             id: "tree",
             nameEnglish: "Tree Pose",
             nameSanskrit: "Vrksasana",
+            pronunciation: "vrik-SHAH-sah-nah",
+            pronunciationAudioURL: "",
             description: "A balancing pose that develops concentration and stability.",
             benefit: "Improves balance and stability. Strengthens thighs, calves, and ankles. Calms and focuses the mind.",
             sampleCues: [

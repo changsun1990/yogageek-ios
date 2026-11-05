@@ -197,6 +197,8 @@ struct PosePickerView: View {
             id: customId,
             nameEnglish: name,
             nameSanskrit: "",
+            pronunciation: "",
+            pronunciationAudioURL: "",
             description: "",
             benefit: "",
             sampleCues: [],

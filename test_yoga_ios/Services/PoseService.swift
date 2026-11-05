@@ -21,6 +21,8 @@ class PoseService {
             guard let nameEnglish = data["nameEnglish"] as? String else { return nil }
 
             let nameSanskrit = data["nameSunskrit"] as? String ?? ""
+            let pronunciation = data["pronunciation"] as? String ?? ""
+            let pronunciationAudioURL = data["pronunciationAudioURL"] as? String ?? ""
             let description = data["description"] as? String ?? ""
             let benefit = data["benefit"] as? String ?? ""
             let muscleGroup = data["muscleGroup"] as? String ?? ""
@@ -73,6 +75,8 @@ class PoseService {
                 id: document.documentID,
                 nameEnglish: nameEnglish,
                 nameSanskrit: nameSanskrit,
+                pronunciation: pronunciation,
+                pronunciationAudioURL: pronunciationAudioURL,
                 description: description,
                 benefit: benefit,
                 sampleCues: sampleCues,
@@ -91,7 +95,9 @@ class PoseService {
     func addPose(_ pose: Pose) async throws {
         let data: [String: Any] = [
             "nameEnglish": pose.nameEnglish,
-            "nameSanskrit": pose.nameSanskrit,
+            "nameSunskrit": pose.nameSanskrit,
+            "pronunciation": pose.pronunciation,
+            "pronunciationAudioURL": pose.pronunciationAudioURL,
             "description": pose.description,
             "benefit": pose.benefit,
             "sampleCues": pose.sampleCues,

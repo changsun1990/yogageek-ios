@@ -11,6 +11,8 @@ struct Pose: Identifiable, Codable, Hashable {
     let id: String
     let nameEnglish: String
     let nameSanskrit: String
+    let pronunciation: String
+    let pronunciationAudioURL: String
     let description: String
     let benefit: String
     let sampleCues: [String]

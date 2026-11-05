@@ -9,3 +9,11 @@ xcuserdata/
 
 # Firebase/Google credentials
 GoogleService-Info.plist
+serviceAccountKey.json
+
+# Python
+.venv/
+
+# Pronunciation clips (stored in Firebase Storage)
+pronunciation_samples/
+pronunciation_audio/
