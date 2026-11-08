@@ -303,7 +303,7 @@
     "id": "chair-pose-figure-four",
     "nameEnglish": "Chair Pose Figure Four",
     "nameSanskrit": "Eka Pada Utkatasana variation",
-    "pronunciation": "AY-kah PAH-dah oot-kah-TAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah oot-kah-TAH-sah-nah"
   },
   {
     "id": "heels-lifted",
@@ -567,7 +567,7 @@
     "id": "flying-pigeon-pose",
     "nameEnglish": "Flying Pigeon Pose",
     "nameSanskrit": "Eka Pada Galavasana",
-    "pronunciation": "AY-kah PAH-dah gah-lah-VAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah gah-lah-VAH-sah-nah"
   },
   {
     "id": "dolphin-plank-pose",
@@ -711,7 +711,7 @@
     "id": "half-camel-one-arm",
     "nameEnglish": "Half Camel Pose (One Arm)",
     "nameSanskrit": "Ardha Ustrasana (Eka Hasta)",
-    "pronunciation": "AR-dah oosh-TRAH-sah-nah AY-kah HAHS-tah"
+    "pronunciation": "AR-dah oosh-TRAH-sah-nah EH-kah HAHS-tah"
   },
   {
     "id": "half-caterpillar-pose",
@@ -758,8 +758,8 @@
   {
     "id": "half-headstand-l-shape",
     "nameEnglish": "Half Headstand L-Shape (Upward Facing Staff Pose)",
-    "nameSanskrit": "Ardha Sirsasana L-shape or Urdhva Dandasana",
-    "pronunciation": "AR-dah sheer-SHAH-sah-nah or OORD-vah dahn-DAH-sah-nah"
+    "nameSanskrit": "Ardha Sirsasana L-shape",
+    "pronunciation": "AR-dah sheer-SHAH-sah-nah"
   },
   {
     "id": "half-headstand-tuck",
@@ -770,8 +770,8 @@
   {
     "id": "half-hero-forward-fold",
     "nameEnglish": "Half Hero Forward Fold",
-    "nameSanskrit": "Ardha Virasana Paschimottanasana",
-    "pronunciation": "AR-dah vee-RAH-sah-nah pahsh-chee-moh-tah-NAH-sah-nah"
+    "nameSanskrit": "Trianga Mukhaekapada Paschimottanasana",
+    "pronunciation": "tree-AHN-gah moo-kah-eh-kah-PAH-dah pahsh-chee-moh-tah-NAH-sah-nah"
   },
   {
     "id": "half-hero-pose",
@@ -828,6 +828,12 @@
     "pronunciation": "AR-dah kah-poh-TAH-sah-nah"
   },
   {
+    "id": "half-plow-pose",
+    "nameEnglish": "Half Plow Pose",
+    "nameSanskrit": "Ardha Halasana",
+    "pronunciation": "AR-dah hah-LAH-sah-nah"
+  },
+  {
     "id": "half-pyramid-pose",
     "nameEnglish": "Half Pyramid Pose",
     "nameSanskrit": "Ardha Parsvottanasana",
@@ -849,7 +855,7 @@
     "id": "half-shoulder-stand-one-leg",
     "nameEnglish": "Half Shoulder Stand with One Leg",
     "nameSanskrit": "Eka Pada Ardha Salamba Sarvangasana",
-    "pronunciation": "AY-kah PAH-dah AR-dah sah-LAHM-bah sar-vahn-GAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah AR-dah sah-LAHM-bah sar-vahn-GAH-sah-nah"
   },
   {
     "id": "half-side-plank-on-knee",
@@ -873,7 +879,7 @@
     "id": "half-standing-split",
     "nameEnglish": "Half Standing Split",
     "nameSanskrit": "Ardha Urdhva Prasarita Eka Padasana",
-    "pronunciation": "AR-dah OORD-vah prah-SAH-ree-tah AY-kah pah-DAH-sah-nah"
+    "pronunciation": "AR-dah OORD-vah prah-SAH-ree-tah EH-kah pah-DAH-sah-nah"
   },
   {
     "id": "half-tripod-headstand",
@@ -1035,7 +1041,7 @@
     "id": "one-legged-king-pigeon-pose-ii",
     "nameEnglish": "King Pigeon Pose II",
     "nameSanskrit": "Eka Pada Rajakapotasana II",
-    "pronunciation": "AY-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
   },
   {
     "id": "knee-to-nose-plank",
@@ -1044,16 +1050,22 @@
     "pronunciation": "pah-lah-KAH-sah-nah vin-YAH-sah"
   },
   {
+    "id": "knees-chest-chin",
+    "nameEnglish": "Knees-Chest-Chin",
+    "nameSanskrit": "Ashtanga Namaskara",
+    "pronunciation": "AHSH-tahn-gah nah-mahs-KAH-rah"
+  },
+  {
     "id": "cross-legged-l-sit",
     "nameEnglish": "L-Sit Hold",
-    "nameSanskrit": "Utthita Lolasana Variation",
-    "pronunciation": "OOT-tee-tah loh-LAH-sah-nah"
+    "nameSanskrit": "Brahmacharyasana",
+    "pronunciation": "brah-mah-chahr-YAH-sah-nah"
   },
   {
     "id": "eka-pada-sirsasana-one-legged-headstand",
     "nameEnglish": "Leg behind the Head",
     "nameSanskrit": "Eka Pada Sirsasana",
-    "pronunciation": "AY-kah PAH-dah sheer-SHAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah sheer-SHAH-sah-nah"
   },
   {
     "id": "legs-up-the-wall",
@@ -1158,6 +1170,12 @@
     "pronunciation": "pah-ree-VRIT-tah ahn-jah-nay-YAH-sah-nah"
   },
   {
+    "id": "low-lunge-with-backbend",
+    "nameEnglish": "Low Lunge with Backbend (Crescent Moon)",
+    "nameSanskrit": "Anjaneyasana Variation",
+    "pronunciation": "ahn-jah-nay-YAH-sah-nah"
+  },
+  {
     "id": "marichis-pose-a",
     "nameEnglish": "Marichi's Pose A (Sage Pose A)",
     "nameSanskrit": "Marichyasana A",
@@ -1191,7 +1209,7 @@
     "id": "mermaid-pose",
     "nameEnglish": "Mermaid Pose",
     "nameSanskrit": "Eka Pada Rajakapotasana Variation",
-    "pronunciation": "AY-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
   },
   {
     "id": "modified-wild-thing",
@@ -1221,13 +1239,13 @@
     "id": "one-leg-extended-variation",
     "nameEnglish": "One Leg Extended Variation",
     "nameSanskrit": "Eka Pada Vistarita Sthiti",
-    "pronunciation": "AY-kah PAH-dah vis-TAH-ree-tah STIH-tee"
+    "pronunciation": "EH-kah PAH-dah vis-TAH-ree-tah STIH-tee"
   },
   {
     "id": "one-handed-handstand",
     "nameEnglish": "One-Handed Handstand",
     "nameSanskrit": "Eka Hasta Adho Mukha Vrksasana",
-    "pronunciation": "AY-kah HAHS-tah AH-doh MOO-kah vrik-SHAH-sah-nah"
+    "pronunciation": "EH-kah HAHS-tah AH-doh MOO-kah vrik-SHAH-sah-nah"
   },
   {
     "id": "one-handed-kneeling-half-bow",
@@ -1239,79 +1257,79 @@
     "id": "one-legged-chaturanga",
     "nameEnglish": "One-Legged Chaturanga",
     "nameSanskrit": "Eka Pada Chaturanga Dandasana",
-    "pronunciation": "AY-kah PAH-dah chah-too-RAHN-gah dahn-DAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah chah-too-RAHN-gah dahn-DAH-sah-nah"
   },
   {
     "id": "one-legged-crane-pose",
     "nameEnglish": "One-Legged Crane in Funky Forearm Balance",
     "nameSanskrit": "Funky Eka Pada Bakasana Pincha Mayurasana",
-    "pronunciation": "AY-kah PAH-dah bah-KAH-sah-nah PIN-chah mah-yoo-RAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah bah-KAH-sah-nah PIN-chah mah-yoo-RAH-sah-nah"
   },
   {
     "id": "half-crow-one-leg",
     "nameEnglish": "One-Legged Crow Pose",
     "nameSanskrit": "Eka Pada Bakasana Variation",
-    "pronunciation": "AY-kah PAH-dah bah-KAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah bah-KAH-sah-nah"
   },
   {
     "id": "half-bridge-one-leg",
     "nameEnglish": "One-Legged Half Bridge Pose",
     "nameSanskrit": "Eka Pada Ardha Setu Bandhasana",
-    "pronunciation": "AY-kah PAH-dah AR-dah SAY-too bahn-DAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah AR-dah SAY-too bahn-DAH-sah-nah"
   },
   {
     "id": "one-legged-wheel-pose",
     "nameEnglish": "One-Legged Half Wheel Pose",
     "nameSanskrit": "Eka Pada Ardha Chakrasana",
-    "pronunciation": "AY-kah PAH-dah AR-dah chah-KRAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah AR-dah chah-KRAH-sah-nah"
   },
   {
     "id": "eka-hasta-bhujapidasana",
     "nameEnglish": "One-Legged Insect Pose (Elephant's Trunk)",
     "nameSanskrit": "Eka Hasta Bhujapidasana/Bhujasana",
-    "pronunciation": "AY-kah HAHS-tah boo-jah-pee-DAH-sah-nah or boo-JAH-sah-nah"
+    "pronunciation": "EH-kah HAHS-tah boo-jah-pee-DAH-sah-nah or boo-JAH-sah-nah"
   },
   {
     "id": "one-legged-inverted-staff-pose",
     "nameEnglish": "One-Legged Inverted Staff Pose",
     "nameSanskrit": "Eka Pada Viparita Dandasana",
-    "pronunciation": "AY-kah PAH-dah vih-pah-REE-tah dahn-DAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah vih-pah-REE-tah dahn-DAH-sah-nah"
   },
   {
     "id": "one-leg-mountain",
     "nameEnglish": "One-Legged Mountain Pose",
     "nameSanskrit": "Eka Pada Tadasana",
-    "pronunciation": "AY-kah PAH-dah tah-DAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah tah-DAH-sah-nah"
   },
   {
     "id": "one-legged-peacock-toes-down",
     "nameEnglish": "One-Legged Peacock Pose Toes Down",
     "nameSanskrit": "Eka Pada Mayurasana",
-    "pronunciation": "AY-kah PAH-dah mah-yoo-RAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah mah-yoo-RAH-sah-nah"
   },
   {
     "id": "one-legged-plank",
     "nameEnglish": "One-Legged Plank",
     "nameSanskrit": "Eka Pada Phalakasana",
-    "pronunciation": "AY-kah PAH-dah pah-lah-KAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah pah-lah-KAH-sah-nah"
   },
   {
     "id": "one-legged-plow-pose",
     "nameEnglish": "One-Legged Plow (Shoulder Stand) Pose ",
     "nameSanskrit": "Eka Pada Halasana",
-    "pronunciation": "AY-kah PAH-dah hah-LAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah hah-LAH-sah-nah"
   },
   {
     "id": "eka-pada-koundinyasana-i-one-legged-sage-koundinya-s-pose-i",
     "nameEnglish": "One-Legged Sage Koundinya's Pose I",
     "nameSanskrit": "Eka Pada Koundinyasana I",
-    "pronunciation": "AY-kah PAH-dah kown-din-YAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah kown-din-YAH-sah-nah"
   },
   {
     "id": "eka-pada-koundinyasana-ii-one-legged-sage-koundinya-s-pose-ii",
     "nameEnglish": "One-Legged Sage Koundinya's Pose II",
     "nameSanskrit": "Eka Pada Koundinyasana II",
-    "pronunciation": "AY-kah PAH-dah kown-din-YAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah kown-din-YAH-sah-nah"
   },
   {
     "id": "one-legged-seated-forward-fold",
@@ -1323,13 +1341,13 @@
     "id": "one-legged-side-crow",
     "nameEnglish": "One-Legged Side Crow",
     "nameSanskrit": "Eka Pada Parsva Kakasana",
-    "pronunciation": "AY-kah PAH-dah PARSH-vah kah-KAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah PARSH-vah kah-KAH-sah-nah"
   },
   {
     "id": "one-legged-headstand",
     "nameEnglish": "One-legged Headstand (Foot to Floor)",
-    "nameSanskrit": "Eka Pada Sirsasana",
-    "pronunciation": "AY-kah PAH-dah sheer-SHAH-sah-nah"
+    "nameSanskrit": "Eka Pada Salamba Sirsasana",
+    "pronunciation": "EH-kah PAH-dah sah-LAHM-bah sheer-SHAH-sah-nah"
   },
   {
     "id": "palm-tree-pose",
@@ -1497,7 +1515,7 @@
     "id": "revolved-chair-pose-with-one-leg-lifted",
     "nameEnglish": "Revolved Chair Pose with One Leg Lifted",
     "nameSanskrit": "Parivrtta Utkatasana Eka Pada",
-    "pronunciation": "pah-ree-VRIT-tah oot-kah-TAH-sah-nah AY-kah PAH-dah"
+    "pronunciation": "pah-ree-VRIT-tah oot-kah-TAH-sah-nah EH-kah PAH-dah"
   },
   {
     "id": "revolved-chair-pose-with-open-arms",
@@ -1581,7 +1599,7 @@
     "id": "revolved-headstand-split-leg",
     "nameEnglish": "Revolved Headstand Split Leg",
     "nameSanskrit": "Parivrtta Eka Pada Sirsasana",
-    "pronunciation": "pah-ree-VRIT-tah AY-kah PAH-dah sheer-SHAH-sah-nah"
+    "pronunciation": "pah-ree-VRIT-tah EH-kah PAH-dah sheer-SHAH-sah-nah"
   },
   {
     "id": "revolved-hero-pose-variation",
@@ -1611,7 +1629,7 @@
     "id": "revolved-one-leg-mountain",
     "nameEnglish": "Revolved One-Legged Mountain Pose",
     "nameSanskrit": "Parivrtta Eka Pada Tadasana",
-    "pronunciation": "pah-ree-VRIT-tah AY-kah PAH-dah tah-DAH-sah-nah"
+    "pronunciation": "pah-ree-VRIT-tah EH-kah PAH-dah tah-DAH-sah-nah"
   },
   {
     "id": "revolved-pigeon-pose",
@@ -1713,7 +1731,7 @@
     "id": "scorpion-dog-pose",
     "nameEnglish": "Scorpion Dog Pose",
     "nameSanskrit": "Vrischika Eka Pada Adho Mukha Svanasana",
-    "pronunciation": "VRISH-chee-kah AY-kah PAH-dah AH-doh MOO-kah shvah-NAH-sah-nah"
+    "pronunciation": "VRISH-chee-kah EH-kah PAH-dah AH-doh MOO-kah shvah-NAH-sah-nah"
   },
   {
     "id": "scorpion-pose",
@@ -1860,22 +1878,16 @@
     "pronunciation": "vah-sish-TAH-sah-nah"
   },
   {
-    "id": "side-plank-with-forearm-support",
-    "nameEnglish": "Side Plank with Forearm Support",
-    "nameSanskrit": "Bahu Vasisthasana",
-    "pronunciation": "BAH-hoo vah-sish-TAH-sah-nah"
-  },
-  {
     "id": "side-plank-with-leg-lift",
     "nameEnglish": "Side Plank with Leg Lift",
     "nameSanskrit": "Parsva Vasisthasana Eka Pada Uttana",
-    "pronunciation": "PARSH-vah vah-sish-TAH-sah-nah AY-kah PAH-dah oot-TAH-nah"
+    "pronunciation": "PARSH-vah vah-sish-TAH-sah-nah EH-kah PAH-dah oot-TAH-nah"
   },
   {
     "id": "sleeping-swan-pose",
     "nameEnglish": "Sleeping Pigeon Pose",
     "nameSanskrit": "Eka Pada Rajakapotasana Variation",
-    "pronunciation": "AY-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah rah-jah-kah-poh-TAH-sah-nah"
   },
   {
     "id": "naga-nidrasana",
@@ -2001,13 +2013,13 @@
     "id": "standing-split-pose",
     "nameEnglish": "Standing Split Pose",
     "nameSanskrit": "Urdhva Prasarita Eka Padasana",
-    "pronunciation": "OORD-vah prah-SAH-ree-tah AY-kah pah-DAH-sah-nah"
+    "pronunciation": "OORD-vah prah-SAH-ree-tah EH-kah pah-DAH-sah-nah"
   },
   {
     "id": "standing-split-with-bind",
     "nameEnglish": "Standing Split with Bent Knee",
     "nameSanskrit": "Urdhva Prasarita Eka Padasana Variation",
-    "pronunciation": "OORD-vah prah-SAH-ree-tah AY-kah pah-DAH-sah-nah"
+    "pronunciation": "OORD-vah prah-SAH-ree-tah EH-kah pah-DAH-sah-nah"
   },
   {
     "id": "big-toes-touching-(samasthiti)",
@@ -2032,12 +2044,6 @@
     "nameEnglish": "Superman (Inverted Locust) Pose",
     "nameSanskrit": "Viparita Salabhasana",
     "pronunciation": "vih-pah-REE-tah shah-lah-BAH-sah-nah"
-  },
-  {
-    "id": "supine-pigeon-pose",
-    "nameEnglish": "Supine Pigeon Pose",
-    "nameSanskrit": "Supta Kapotasana",
-    "pronunciation": "SOOP-tah kah-poh-TAH-sah-nah"
   },
   {
     "id": "supine-spinal-twist",
@@ -2157,7 +2163,7 @@
     "id": "one-legged-downward-facing-dog",
     "nameEnglish": "Three-legged Downward-Facing Dog",
     "nameSanskrit": "Eka Pada Adho Mukha Svanasana",
-    "pronunciation": "AY-kah PAH-dah AH-doh MOO-kah shvah-NAH-sah-nah"
+    "pronunciation": "EH-kah PAH-dah AH-doh MOO-kah shvah-NAH-sah-nah"
   },
   {
     "id": "thunderbolt-pose",

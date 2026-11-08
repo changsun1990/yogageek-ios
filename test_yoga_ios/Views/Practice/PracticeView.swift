@@ -6,8 +6,6 @@
 //
 
 import SwiftUI
-import AVFoundation
-import MediaPlayer
 
 struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
@@ -19,9 +17,6 @@ struct PracticeView: View {
     @State private var voiceEnabled = false
     @State private var voiceCommandFeedback: String? = nil
     @State private var showVoiceHelp = false
-    // Voice ducking: lowers system output volume while the user is speaking
-    @State private var duckOutputVolume: Float = 1.0
-    @State private var savedOutputVolume: Float = 1.0
 
     init(sequence: YogaSequence, poses: [Pose], startAtSection: Int? = nil) {
         _viewModel = State(initialValue: PracticeViewModel(sequence: sequence, poses: poses, startAtSection: startAtSection))
@@ -32,12 +27,6 @@ struct PracticeView: View {
             GeometryReader { geo in
                 ZStack {
                     Color.yogaSurface.ignoresSafeArea()
-
-                    // Hidden MPVolumeView — must be in the hierarchy for volume control to work
-                    VolumeSliderView(volume: duckOutputVolume)
-                        .frame(width: 1, height: 1)
-                        .opacity(0.001)
-                        .allowsHitTesting(false)
 
                     if viewModel.isComplete {
                         completionView
@@ -62,6 +51,9 @@ struct PracticeView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .task {
+                await viewModel.prepareSpeech()
+            }
             .sheet(isPresented: $showingMusicPicker) {
                 MusicPickerView(musicManager: musicManager)
             }
@@ -69,21 +61,20 @@ struct PracticeView: View {
                 VoiceCommandHelpView()
             }
             .onDisappear {
+                viewModel.end()
                 voiceService.stop()
-                viewModel.announcementEnabled = true
-                duckOutputVolume = savedOutputVolume
+                viewModel.readAloud(through: nil)
                 if musicManager.activeService == .appleMusic {
                     musicManager.stop()
                 }
             }
-            .onChange(of: voiceService.isSpeaking) { _, speaking in
-                guard musicManager.activeService != .none else { return }
-                if speaking {
-                    savedOutputVolume = AVAudioSession.sharedInstance().outputVolume
-                    duckOutputVolume = max(0.05, savedOutputVolume * 0.25)
-                } else {
-                    duckOutputVolume = savedOutputVolume
-                }
+            .onChange(of: voiceService.isListening) { _, listening in
+                // Voice commands turned themselves off, like when speech recognition stopped working
+                guard !listening, voiceEnabled else { return }
+                voiceEnabled = false
+                showVoiceHelp = false
+                viewModel.readAloud(through: nil)
+                showFeedback("Voice commands aren't available right now")
             }
         }
     }
@@ -176,13 +167,22 @@ struct PracticeView: View {
                     Text("Done")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .fixedSize()
                 }
 
-                Button { viewModel.toggleAudio() } label: {
-                    Image(systemName: viewModel.audioEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                // One choice for what's said out loud, so sound and cues can't conflict
+                Menu {
+                    Picker("Voice", selection: Binding(get: { viewModel.voice }, set: { viewModel.setVoice($0) })) {
+                        ForEach(PracticeVoice.allCases, id: \.self) { voice in
+                            Label(voice.title, systemImage: voice.systemImage)
+                        }
+                    }
+                } label: {
+                    Image(systemName: viewModel.voice.systemImage)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityLabel("Voice: \(viewModel.voice.title)")
 
                 Button { showingMusicPicker = true } label: {
                     Image(systemName: musicManager.activeService != .none ? "music.note.list" : "music.note")
@@ -191,10 +191,12 @@ struct PracticeView: View {
                 }
 
                 Button { Task { await toggleVoice() } } label: {
-                    Image(systemName: voiceEnabled ? "microphone.fill" : "microphone.slash")
+                    // A person speaking rather than a microphone: commands are heard, not recorded
+                    Image(systemName: voiceEnabled ? "person.wave.2.fill" : "person.wave.2")
                         .font(.subheadline)
                         .foregroundStyle(voiceEnabled ? Color.yogaPrimary : .secondary)
                 }
+                .accessibilityLabel(voiceEnabled ? "Turn off voice commands" : "Turn on voice commands")
             }
 
             Spacer()
@@ -338,7 +340,7 @@ struct PracticeView: View {
     private var textBlock: some View {
         VStack(spacing: 6) {
             // Sanskrit name — tracked uppercase in accent color
-            if let sanskrit = viewModel.currentPose?.nameSanskrit, !sanskrit.isEmpty {
+            if let sanskrit = viewModel.currentPoseEntry?.displaySanskrit(for: viewModel.currentPose), !sanskrit.isEmpty {
                 Text(sanskrit.uppercased())
                     .font(.caption)
                     .kerning(3)
@@ -357,8 +359,8 @@ struct PracticeView: View {
 
             // Cue text (user custom cues first, then pose sample cues)
             let cues = activeCues
-            if !cues.isEmpty {
-                Text(cues.joined(separator: " "))
+            if !cues.characters.isEmpty {
+                Text(cues)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -369,19 +371,17 @@ struct PracticeView: View {
     }
 
     private var currentPoseName: String {
-        viewModel.currentPose?.nameEnglish
-            ?? viewModel.currentPoseEntry?.customName
-            ?? ""
+        viewModel.currentPoseEntry?.displayName(for: viewModel.currentPose) ?? ""
     }
 
-    private var activeCues: [String] {
+    private var activeCues: AttributedString {
         if let entry = viewModel.currentPoseEntry, !entry.customCues.isEmpty {
-            return Array(entry.customCues.prefix(2))
+            return CueMarkdown.attributedString(from: Array(entry.customCues.prefix(2)), separator: " ")
         }
         if let pose = viewModel.currentPose, !pose.sampleCues.isEmpty {
-            return Array(pose.sampleCues.prefix(2))
+            return AttributedString(pose.sampleCues.prefix(2).joined(separator: " "))
         }
-        return []
+        return AttributedString()
     }
 
     // MARK: - Controls
@@ -447,20 +447,24 @@ struct PracticeView: View {
         if voiceEnabled {
             voiceService.stop()
             voiceEnabled = false
-            viewModel.announcementEnabled = true
-            duckOutputVolume = savedOutputVolume
+            viewModel.readAloud(through: nil)
         } else {
             let granted = await voiceService.requestPermissions()
             if granted {
-                // Mute TTS while voice commands are active — both compete for the
-                // same AVAudioSession and AVSpeechSynthesizer triggers !pri errors.
-                viewModel.announcementEnabled = false
                 voiceService.onCommand = { command in
                     handleVoiceCommand(command)
                 }
-                voiceService.start()
-                voiceEnabled = true
-                showVoiceHelp = true
+                // Pose names and cues keep playing; their words aren't taken as commands
+                voiceService.isAppSpeech = { word in
+                    viewModel.isSaying(word)
+                }
+                if await voiceService.start() {
+                    voiceEnabled = true
+                    showVoiceHelp = true
+                    viewModel.readAloud(through: voiceService)
+                } else {
+                    showFeedback("Voice commands aren't available right now")
+                }
             }
         }
     }
@@ -544,24 +548,6 @@ struct PracticeView: View {
     }
 }
 
-// MARK: - Volume Slider (MPVolumeView wrapper)
-
-/// Invisible UIViewRepresentable that exposes MPVolumeView's system-volume slider.
-/// Must be in the live view hierarchy for the slider to be populated — we hide it
-/// with opacity(0.001) and a 1×1 frame.
-private struct VolumeSliderView: UIViewRepresentable {
-    var volume: Float
-
-    func makeUIView(context: Context) -> MPVolumeView { MPVolumeView() }
-
-    func updateUIView(_ uiView: MPVolumeView, context: Context) {
-        // Defer one run-loop so the subviews are laid out before we access them.
-        DispatchQueue.main.async {
-            (uiView.subviews.compactMap { $0 as? UISlider }.first)?.value = volume
-        }
-    }
-}
-
 // MARK: - Voice Command Help Sheet
 
 private struct VoiceCommandHelpView: View {
@@ -583,7 +569,7 @@ private struct VoiceCommandHelpView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 20)
 
-            Image(systemName: "microphone.fill")
+            Image(systemName: "person.wave.2.fill")
                 .font(.system(size: 36))
                 .foregroundStyle(Color.yogaPrimary)
                 .padding(.bottom, 8)
@@ -592,7 +578,7 @@ private struct VoiceCommandHelpView: View {
                 .font(.title3.weight(.semibold))
                 .padding(.bottom, 4)
 
-            Text("Speak these words while the mic is active")
+            Text("Say these words while voice commands are on")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -628,6 +614,12 @@ private struct VoiceCommandHelpView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, 20)
 
+            Label("Your voice is understood on your iPhone. Nothing is recorded or saved.", systemImage: "lock.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+
             Button {
                 dismiss()
             } label: {
@@ -640,7 +632,7 @@ private struct VoiceCommandHelpView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
+            .padding(.top, 16)
 
             Spacer()
         }

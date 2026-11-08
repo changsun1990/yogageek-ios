@@ -509,7 +509,7 @@ struct ShareSectionView: View {
                                 HStack(spacing: 8) {
                                     PoseImageView(imageURL: pose.imageURL, size: 24, cornerRadius: 4)
 
-                                    Text(pose.nameEnglish)
+                                    Text(poseEntry.displayName(for: pose))
                                         .font(.subheadline)
 
                                     Spacer()
@@ -1019,7 +1019,7 @@ struct SharedSectionCard: View {
                         PoseImageView(imageURL: pose.imageURL, size: 36, cornerRadius: 8)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(pose.nameEnglish)
+                            Text(poseEntry.displayName(for: pose))
                                 .font(.subheadline)
                             if let duration = poseEntry.duration {
                                 Text("\(duration)s")

@@ -159,6 +159,7 @@ class SequenceViewModel {
                     notes: pose.notes,
                     duration: pose.duration,
                     customName: pose.customName,
+                    customSanskrit: pose.customSanskrit,
                     breath: pose.breath
                 )
             },

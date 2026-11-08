@@ -217,7 +217,7 @@ def generate(voice):
     print(f"\nDone! Recorded {recorded} clips ({len(poses) - recorded} unchanged) in {AUDIO_DIR}/")
 
 
-def upload():
+def upload(pose_ids=()):
     import firebase_admin
     from firebase_admin import credentials, firestore, storage
 
@@ -228,6 +228,12 @@ def upload():
     bucket = storage.bucket()
 
     poses = [p for p in load_poses() if os.path.exists(os.path.join(AUDIO_DIR, f"{p['id']}.mp3"))]
+    # Naming poses uploads just those, leaving every other pose's link as it is
+    if pose_ids:
+        unknown = set(pose_ids) - {p['id'] for p in poses}
+        if unknown:
+            raise SystemExit(f"No clip for: {', '.join(sorted(unknown))}")
+        poses = [p for p in poses if p['id'] in pose_ids]
 
     # Poses deleted from Firestore since the clips were made are skipped, so the link batch can't fail on them
     existing = {doc.id for doc in db.collection(COLLECTION).select(['nameEnglish']).stream()}
@@ -266,6 +272,6 @@ if __name__ == "__main__":
     elif command == 'generate' and len(sys.argv) > 2:
         generate(sys.argv[2])
     elif command == 'upload':
-        upload()
+        upload(set(sys.argv[2:]))
     else:
-        print("Usage: python3 pose_audio.py samples | generate <voice name> | upload")
+        print("Usage: python3 pose_audio.py samples | generate <voice name> | upload [pose id ...]")

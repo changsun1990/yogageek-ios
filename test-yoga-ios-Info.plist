@@ -30,8 +30,8 @@
 		<string>spotify</string>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>YogaGeek uses the microphone to listen for voice commands like "next" during practice, so you can advance poses hands-free.</string>
+	<string>YogaGeek listens for voice commands like "next" during practice, so you can move between poses hands-free. Your voice is understood on your iPhone and is never recorded or saved.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>YogaGeek uses speech recognition to detect voice commands during practice. No audio is stored by YogaGeek.</string>
+	<string>YogaGeek understands voice commands like "next" and "pause" on your iPhone. Nothing you say is recorded, saved, or sent anywhere.</string>
 </dict>
 </plist>

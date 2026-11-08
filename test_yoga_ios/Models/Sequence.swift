@@ -100,16 +100,44 @@ struct PoseEntry: Identifiable, Codable, Hashable {
     var customCues: [String]
     var notes: String
     var duration: Int? // seconds, nil means no specific duration
-    var customName: String? // for user-created poses not in the library
+    var customName: String? // user's name for the pose; always set for user-created poses not in the library
+    var customSanskrit: String? // user's Sanskrit name; "" hides the library one
     var breath: String // breathing instruction (e.g. "Inhale arms up, exhale fold")
 
-    init(id: String = UUID().uuidString, poseId: String, customCues: [String] = [], notes: String = "", duration: Int? = nil, customName: String? = nil, breath: String = "") {
+    init(id: String = UUID().uuidString, poseId: String, customCues: [String] = [], notes: String = "", duration: Int? = nil, customName: String? = nil, customSanskrit: String? = nil, breath: String = "") {
         self.id = id
         self.poseId = poseId
         self.customCues = customCues
         self.notes = notes
         self.duration = duration
         self.customName = customName
+        self.customSanskrit = customSanskrit
         self.breath = breath
+    }
+
+    /// The user's own names take priority over the library pose's names
+    func displayName(for pose: Pose?) -> String {
+        customName ?? pose?.nameEnglish ?? "Unknown Pose"
+    }
+
+    func displaySanskrit(for pose: Pose?) -> String {
+        customSanskrit ?? pose?.nameSanskrit ?? ""
+    }
+
+    /// Keeps the name only if it differs from the library pose's; an empty name falls back to the library one
+    mutating func setName(_ name: String, for pose: Pose?) {
+        let name = name.trimmingCharacters(in: .whitespaces)
+        if let pose {
+            customName = name.isEmpty || name == pose.nameEnglish ? nil : name
+        } else if !name.isEmpty {
+            // Poses the user created have no library name to fall back on
+            customName = name
+        }
+    }
+
+    /// An empty Sanskrit name hides the library one
+    mutating func setSanskrit(_ sanskrit: String, for pose: Pose?) {
+        let sanskrit = sanskrit.trimmingCharacters(in: .whitespaces)
+        customSanskrit = sanskrit == (pose?.nameSanskrit ?? "") ? nil : sanskrit
     }
 }

@@ -9,6 +9,29 @@ import Foundation
 import SwiftUI
 import AVFoundation
 
+/// What practice says out loud
+enum PracticeVoice: String, CaseIterable {
+    case silent
+    case poseNames
+    case namesAndCues
+
+    var title: String {
+        switch self {
+        case .silent: "Silent"
+        case .poseNames: "Pose Names"
+        case .namesAndCues: "Pose Names & Cues"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .silent: "speaker.slash.fill"
+        case .poseNames: "speaker.wave.1.fill"
+        case .namesAndCues: "speaker.wave.3.fill"
+        }
+    }
+}
+
 enum TimingMode {
     case perPose      // individual pose timers
     case sectionLevel // one timer for the whole section, all poses visible
@@ -33,16 +56,18 @@ class PracticeViewModel {
     var sessionTimeElapsed: Int = 0
     var isPlaying: Bool = false
     var isComplete: Bool = false
-    var audioEnabled: Bool = true
-    /// When voice commands are active, suppress AVSpeechSynthesizer announcements
-    /// to avoid audio session priority conflicts (!pri / 561017449 errors).
-    var announcementEnabled: Bool = true
+    /// Remembered between sessions
+    private(set) var voice = PracticeVoice(rawValue: UserDefaults.standard.string(forKey: PracticeViewModel.voiceKey) ?? "") ?? .poseNames
+    var audioEnabled: Bool { voice != .silent }
+    var readCuesEnabled: Bool { voice == .namesAndCues }
+
+    private static let voiceKey = "practiceVoice"
 
     // Timer
     private var timer: Timer?
 
     // Audio
-    private let speechSynthesizer = AVSpeechSynthesizer()
+    private let speaker = PhraseSpeaker()
     private var audioPlayer: AVAudioPlayer?
 
     /// Fallback duration (seconds) for poses in a perPose section that have no
@@ -231,17 +256,14 @@ class PracticeViewModel {
     }
 
     private func setupAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        // Don't downgrade from .playAndRecord — VoiceCommandService may have
-        // already configured the session for recording. SwiftUI re-creates view
-        // structs on every @Observable change, causing this init to run on
-        // discarded instances; resetting the category here would break the mic.
-        guard session.category != .playAndRecord else { return }
-        do {
+        AudioSessionQueue.enqueue { session in
+            // Don't downgrade from .playAndRecord — VoiceCommandService may have
+            // already configured the session for recording. SwiftUI re-creates view
+            // structs on every @Observable change, causing this init to run on
+            // discarded instances; resetting the category here would break the mic.
+            guard session.category != .playAndRecord else { return }
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers, .duckOthers])
             try session.setActive(true)
-        } catch {
-            print("Failed to setup audio session: \(error)")
         }
     }
 
@@ -295,6 +317,8 @@ class PracticeViewModel {
     func pause() {
         isPlaying = false
         stopTimer()
+        // Don't keep reading cues while paused; resuming announces the pose again
+        speaker.stop()
     }
 
     func next() {
@@ -483,33 +507,85 @@ class PracticeViewModel {
         isPlaying = false
         isComplete = true
         stopTimer()
+        // Nothing more to read, like the rest of the last pose's cues
+        speaker.stop()
         playCompletionSound()
+    }
+
+    /// Stops the timer and anything being read, for when practice is closed
+    func end() {
+        isPlaying = false
+        stopTimer()
+        speaker.stop()
     }
 
     // MARK: - Audio
 
     private func announcePose() {
-        guard audioEnabled, announcementEnabled, let pose = currentPose else { return }
+        guard audioEnabled, currentPoseEntry != nil else { return }
+        var phrases = [spokenName(at: currentIndex)]
+        if readCuesEnabled {
+            phrases += cuesForSpeech(at: currentIndex)
+        }
+        speaker.speak(phrases)
+    }
 
-        // Stop any current speech
-        speechSynthesizer.stopSpeaking(at: .immediate)
+    /// Whether practice itself just said `word` (like "back" in a cue), so voice commands can ignore it
+    func isSaying(_ word: String) -> Bool {
+        speaker.isSaying(word)
+    }
 
-        // Create utterance with pose name
-        let utterance = AVSpeechUtterance(string: pose.nameEnglish)
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.9
-        // Pick the highest-quality installed en-US voice (premium > enhanced > default).
-        // If none found, utterance.voice stays nil → system default, still speaks.
-        utterance.voice = AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.language == "en-US" }
-            .max(by: { $0.quality.rawValue < $1.quality.rawValue })
-            ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance.volume = 0.8
+    /// Reads pose names and cues through voice commands' audio while they're on, so the microphone
+    /// can tell them from the user (nil once voice commands are off)
+    func readAloud(through voiceCommands: VoiceCommandService?) {
+        speaker.voiceCommands = voiceCommands
+    }
 
-        speechSynthesizer.speak(utterance)
+    /// Fetches natural-voice recordings for everything practice will say, starting with the current pose
+    func prepareSpeech() async {
+        let upcoming = Array(flattenedPoses.indices.dropFirst(currentIndex)) + Array(flattenedPoses.indices.prefix(currentIndex))
+        var phrases: [String] = []
+        for index in upcoming {
+            phrases.append(spokenName(at: index))
+            if readCuesEnabled {
+                phrases += cuesForSpeech(at: index)
+            }
+        }
+        await SpeechClipService.shared.prefetch(phrases)
+    }
+
+    /// The user's cues for a pose, or the library cues when they haven't written any, as plain text
+    private func cuesForSpeech(at index: Int) -> [String] {
+        guard index < flattenedPoses.count else { return [] }
+        let (_, entry, pose) = flattenedPoses[index]
+        let cues = entry.customCues.isEmpty
+            ? pose?.sampleCues ?? []
+            : entry.customCues.map { String(CueMarkdown.attributedString(from: [$0], separator: "").characters) }
+        return cues
+            .map { cue in
+                // Bullets are for the eye, not the voice
+                let trimmed = cue.trimmingCharacters(in: .whitespaces)
+                return trimmed.hasPrefix("•") ? trimmed.dropFirst().trimmingCharacters(in: .whitespaces) : trimmed
+            }
+            .filter { !$0.isEmpty }
+            .map(Self.spoken)
+    }
+
+    private func spokenName(at index: Int) -> String {
+        Self.spoken(flattenedPoses[index].poseEntry.displayName(for: flattenedPoses[index].pose))
+    }
+
+    /// How a name or cue is said aloud: "Warrior I" as "Warrior one" rather than the letter I
+    private static func spoken(_ text: String) -> String {
+        let numbers = ["I": "one", "II": "two", "III": "three", "IV": "four"]
+        // A numeral right after a capitalized word, like "Twist II", but not "I'm"
+        return text.replacing(#/\b([A-Z][\w'’]*) (IV|III|II|I)\b(?![\w'’])/#) { match in
+            "\(match.1) \(numbers[String(match.2)] ?? String(match.2))"
+        }
     }
 
     private func playChime() {
-        guard audioEnabled, announcementEnabled else { return }
+        guard audioEnabled else { return }
         AudioServicesPlaySystemSound(1057)
     }
 
@@ -518,15 +594,27 @@ class PracticeViewModel {
         AudioServicesPlaySystemSound(1025)
     }
 
-    func toggleAudio() {
-        audioEnabled.toggle()
-        if !audioEnabled {
-            speechSynthesizer.stopSpeaking(at: .immediate)
+    func setVoice(_ newVoice: PracticeVoice) {
+        let addsCues = newVoice == .namesAndCues && voice != .namesAndCues
+        voice = newVoice
+        UserDefaults.standard.set(newVoice.rawValue, forKey: Self.voiceKey)
+
+        guard addsCues else {
+            // Stop anything that's no longer wanted, like cues mid-sentence
+            if newVoice != .namesAndCues {
+                speaker.stop()
+            }
+            return
+        }
+        Task { await prepareSpeech() }
+        if isPlaying {
+            // Read the current pose's cues now rather than waiting for the next pose
+            speaker.speak(cuesForSpeech(at: currentIndex))
         }
     }
 
     deinit {
         stopTimer()
-        speechSynthesizer.stopSpeaking(at: .immediate)
+        speaker.stop()
     }
 }

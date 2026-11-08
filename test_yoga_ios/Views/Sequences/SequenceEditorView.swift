@@ -64,8 +64,8 @@ struct SequenceEditorView: View {
                     }
                 }
                 .sheet(isPresented: $showingPosePicker) {
-                    PosePickerView(poses: poses) { pose in
-                        addPoseToSection(pose)
+                    PosePickerView(poses: poses) { pose, name, sanskrit in
+                        addPoseToSection(pose, name: name, sanskrit: sanskrit)
                     }
                 }
                 .fullScreenCover(isPresented: $showingPractice) {
@@ -84,7 +84,7 @@ struct SequenceEditorView: View {
                     DurationEditorView(sequence: $sequence)
                 }
                 .sheet(item: $selectedPoseForDetail) { pose in
-                    PoseDetailSheet(pose: pose) {
+                    PoseDetailSheet(pose: pose) { _, _ in
                         // Just close the detail view, pose is already in section
                         selectedPoseForDetail = nil
                     }
@@ -314,10 +314,15 @@ struct SequenceEditorView: View {
         return "\(minutes) min"
     }
 
-    private func addPoseToSection(_ pose: Pose) {
+    private func addPoseToSection(_ pose: Pose, name: String, sanskrit: String) {
         guard let index = targetSectionIndex, index < sequence.sections.count else { return }
         let isCustom = pose.id.hasPrefix("custom-")
-        let poseEntry = PoseEntry(poseId: pose.id, customName: isCustom ? pose.nameEnglish : nil)
+        var poseEntry = PoseEntry(poseId: pose.id, customName: isCustom ? pose.nameEnglish : nil)
+        if !isCustom {
+            // Names changed in the pose picker apply to this sequence only
+            poseEntry.setName(name, for: pose)
+            poseEntry.setSanskrit(sanskrit, for: pose)
+        }
         withAnimation {
             sequence.sections[index].poses.append(poseEntry)
         }

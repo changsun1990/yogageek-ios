@@ -10,7 +10,8 @@ import SwiftUI
 struct PosePickerView: View {
     @Environment(\.dismiss) private var dismiss
     let poses: [Pose]
-    let onSelect: (Pose) -> Void
+    /// Called with the names to use for the pose: the library names unless the user changed them
+    let onSelect: (_ pose: Pose, _ name: String, _ sanskrit: String) -> Void
     var allowMultiSelect: Bool = false
     var onSelectMultiple: (([Pose]) -> Void)? = nil
 
@@ -23,13 +24,7 @@ struct PosePickerView: View {
     @State private var selectedPoseIds: Set<String> = []
 
     private var filteredPoses: [Pose] {
-        if searchText.isEmpty {
-            return poses
-        }
-        return poses.filter { pose in
-            pose.nameEnglish.localizedCaseInsensitiveContains(searchText) ||
-            pose.nameSanskrit.localizedCaseInsensitiveContains(searchText)
-        }
+        PoseSearch.results(for: searchText, in: poses)
     }
 
     var body: some View {
@@ -137,11 +132,11 @@ struct PosePickerView: View {
                 }
             }
             .sheet(item: $selectedPoseForDetail) { pose in
-                PoseDetailSheet(pose: pose) {
+                PoseDetailSheet(pose: pose, allowsRenaming: !allowMultiSelect) { name, sanskrit in
                     if allowMultiSelect {
                         selectedPoseIds.insert(pose.id)
                     } else {
-                        addPose(pose)
+                        addPose(pose, name: name, sanskrit: sanskrit)
                     }
                     selectedPoseForDetail = nil
                 }
@@ -209,7 +204,7 @@ struct PosePickerView: View {
             categories: ["Custom"],
             difficulty: .beginner
         )
-        onSelect(pose)
+        onSelect(pose, name, "")
         addedPoseName = name
         customPoseName = ""
         showingConfirmation = true
@@ -219,9 +214,10 @@ struct PosePickerView: View {
         }
     }
 
-    private func addPose(_ pose: Pose) {
-        onSelect(pose)
-        addedPoseName = pose.nameEnglish
+    private func addPose(_ pose: Pose, name: String? = nil, sanskrit: String? = nil) {
+        let name = name ?? pose.nameEnglish
+        onSelect(pose, name, sanskrit ?? pose.nameSanskrit)
+        addedPoseName = name.trimmingCharacters(in: .whitespaces).isEmpty ? pose.nameEnglish : name
         showingConfirmation = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -300,7 +296,13 @@ struct PosePickerRow: View {
 struct PoseDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let pose: Pose
-    let onAdd: () -> Void
+    /// Lets the user change the pose's names before adding it
+    var allowsRenaming = false
+    /// Called with the names to use: the library names unless the user changed them
+    let onAdd: (_ name: String, _ sanskrit: String) -> Void
+
+    @State private var name = ""
+    @State private var sanskrit = ""
 
     var body: some View {
         NavigationStack {
@@ -328,6 +330,31 @@ struct PoseDetailSheet: View {
                         .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
+
+                    // Names used in the sequence, for variations the library name doesn't cover
+                    if allowsRenaming {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Name in Your Sequence")
+                                .font(.yogaHeadline())
+
+                            TextField(pose.nameEnglish, text: $name)
+                                .font(.subheadline)
+                                .padding(10)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            TextField("Sanskrit name", text: $sanskrit)
+                                .font(.subheadline)
+                                .italic()
+                                .padding(10)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            Text("Change these to describe your variation. The pose library isn't changed.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
 
                     Divider()
 
@@ -435,15 +462,19 @@ struct PoseDetailSheet: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        onAdd()
+                        onAdd(name, sanskrit)
                     } label: {
                         Label("Add", systemImage: "plus.circle.fill")
                     }
                 }
             }
+            .onAppear {
+                name = pose.nameEnglish
+                sanskrit = pose.nameSanskrit
+            }
             .safeAreaInset(edge: .bottom) {
                 Button {
-                    onAdd()
+                    onAdd(name, sanskrit)
                 } label: {
                     Label("Add to Section", systemImage: "plus.circle.fill")
                         .font(.yogaHeadline())
@@ -461,7 +492,7 @@ struct PoseDetailSheet: View {
 }
 
 #Preview {
-    PosePickerView(poses: MockPoseData.poses, onSelect: { pose in
-        print("Selected: \(pose.nameEnglish)")
+    PosePickerView(poses: MockPoseData.poses, onSelect: { _, name, _ in
+        print("Selected: \(name)")
     })
 }

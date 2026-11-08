@@ -163,7 +163,10 @@ struct CopyFromExistingView: View {
                         poseId: pose.poseId,
                         customCues: pose.customCues,
                         notes: pose.notes,
-                        duration: pose.duration
+                        duration: pose.duration,
+                        customName: pose.customName,
+                        customSanskrit: pose.customSanskrit,
+                        breath: pose.breath
                     )
                 }
             )

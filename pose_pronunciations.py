@@ -37,9 +37,15 @@ def export_names():
 
     print(f"Exported {len(poses)} poses to {NAMES_FILE}")
 
-def upload_pronunciations():
+def upload_pronunciations(pose_ids=()):
     with open(PRONUNCIATIONS_FILE, 'r') as f:
         entries = [e for e in json.load(f) if e['pronunciation']]
+    # Naming poses updates just those, so pronunciations edited in Firestore elsewhere aren't overwritten
+    if pose_ids:
+        unknown = set(pose_ids) - {e['id'] for e in entries}
+        if unknown:
+            raise SystemExit(f"Not in {PRONUNCIATIONS_FILE}: {', '.join(sorted(unknown))}")
+        entries = [e for e in entries if e['id'] in pose_ids]
 
     collection = db.collection(COLLECTION)
 
@@ -61,6 +67,6 @@ if __name__ == "__main__":
     if command == 'export':
         export_names()
     elif command == 'upload':
-        upload_pronunciations()
+        upload_pronunciations(set(sys.argv[2:]))
     else:
-        print("Usage: python3 pose_pronunciations.py export|upload")
+        print("Usage: python3 pose_pronunciations.py export | upload [pose id ...]")

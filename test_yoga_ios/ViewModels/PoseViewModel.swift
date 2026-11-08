@@ -20,14 +20,7 @@ class PoseViewModel {
     private let poseService = PoseService()
 
     var filteredPoses: [Pose] {
-        var result = poses
-
-        if !searchText.isEmpty {
-            result = result.filter { pose in
-                pose.nameEnglish.localizedCaseInsensitiveContains(searchText) ||
-                pose.nameSanskrit.localizedCaseInsensitiveContains(searchText)
-            }
-        }
+        var result = PoseSearch.results(for: searchText, in: poses)
 
         if let category = selectedCategory {
             result = result.filter { $0.categories.contains(category.rawValue) }

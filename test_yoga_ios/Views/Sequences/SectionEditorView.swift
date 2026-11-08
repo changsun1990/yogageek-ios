@@ -202,6 +202,7 @@ struct SectionEditorView: View {
                                             notes: original.notes,
                                             duration: original.duration,
                                             customName: original.customName,
+                                            customSanskrit: original.customSanskrit,
                                             breath: original.breath
                                         )
                                         if let idx = section.poses.firstIndex(where: { $0.id == poseEntry.id }) {
@@ -355,8 +356,11 @@ struct PoseRowView: View {
     let onDelete: () -> Void
 
     @State private var isExpanded = false
+    @State private var nameInputText = ""
+    @State private var sanskritInputText = ""
     @State private var durationInputText = ""
     @State private var durationUnit: DurationUnit = .seconds
+    @State private var showingCueEditor = false
 
     enum DurationUnit: String, CaseIterable {
         case seconds = "sec"
@@ -397,19 +401,20 @@ struct PoseRowView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(pose?.nameEnglish ?? poseEntry.customName ?? "Unknown Pose")
+                            Text(poseEntry.displayName(for: pose))
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
 
-                            if let sanskrit = pose?.nameSanskrit, !sanskrit.isEmpty {
+                            let sanskrit = poseEntry.displaySanskrit(for: pose)
+                            if !sanskrit.isEmpty {
                                 Text(sanskrit)
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
                                     .italic()
                                     .lineLimit(1)
-                            } else if poseEntry.customName != nil {
+                            } else if pose == nil && poseEntry.customName != nil {
                                 Text("Custom pose")
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
@@ -439,6 +444,7 @@ struct PoseRowView: View {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         isExpanded.toggle()
                         if isExpanded {
+                            syncNameInput()
                             syncDurationInput()
                         }
                     }
@@ -492,7 +498,7 @@ struct PoseRowView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
-            // Expanded content - Duration, Cues, Notes
+            // Expanded content - Name, Duration, Breath, Cues, Notes
             if isExpanded {
                 VStack(alignment: .leading, spacing: 14) {
                     // Divider with gradient
@@ -506,6 +512,50 @@ struct PoseRowView: View {
                         )
                         .frame(height: 1)
                         .padding(.horizontal, 14)
+
+                    // Name section - rename this pose for this sequence only
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Label("Name", systemImage: "character.cursor.ibeam")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            if let pose, poseEntry.customName != nil || poseEntry.customSanskrit != nil {
+                                Button {
+                                    nameInputText = pose.nameEnglish
+                                    sanskritInputText = pose.nameSanskrit
+                                } label: {
+                                    Text("Reset")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.yogaPrimary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        TextField(pose?.nameEnglish ?? "Pose name", text: $nameInputText)
+                            .font(.subheadline)
+                            .padding(10)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .onChange(of: nameInputText) { _, newValue in
+                                poseEntry.setName(newValue, for: pose)
+                            }
+
+                        TextField("Sanskrit name", text: $sanskritInputText)
+                            .font(.subheadline)
+                            .italic()
+                            .padding(10)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .onChange(of: sanskritInputText) { _, newValue in
+                                poseEntry.setSanskrit(newValue, for: pose)
+                            }
+                    }
+                    .padding(.horizontal, 14)
 
                     // Duration section
                     VStack(alignment: .leading, spacing: 6) {
@@ -583,14 +633,20 @@ struct PoseRowView: View {
                             .fontWeight(.medium)
                             .foregroundStyle(.secondary)
 
-                        TextField("Add teaching cues...", text: Binding(
-                            get: { poseEntry.customCues.joined(separator: ", ") },
-                            set: { poseEntry.customCues = $0.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
-                        ), axis: .vertical)
-                        .font(.subheadline)
-                        .padding(10)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        Button {
+                            showingCueEditor = true
+                        } label: {
+                            Text(cuePreview)
+                                .font(.subheadline)
+                                .foregroundStyle(poseEntry.customCues.isEmpty ? Color(.placeholderText) : Color.primary)
+                                .lineLimit(4)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(10)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 14)
 
@@ -617,6 +673,20 @@ struct PoseRowView: View {
             }
         }
         .background(Color.yogaCardBackground)
+        .sheet(isPresented: $showingCueEditor) {
+            CueEditorView(poseName: poseEntry.displayName(for: pose), defaultCues: pose?.sampleCues ?? [], cues: $poseEntry.customCues)
+        }
+    }
+
+    /// The user's cues with their formatting, or the library cues used in their place
+    private var cuePreview: AttributedString {
+        if !poseEntry.customCues.isEmpty {
+            return CueMarkdown.attributedString(from: poseEntry.customCues, separator: "\n")
+        }
+        if let pose, !pose.sampleCues.isEmpty {
+            return AttributedString(pose.sampleCues.map { "• " + $0 }.joined(separator: "\n"))
+        }
+        return AttributedString("Add teaching cues...")
     }
 
     private func breathOption(_ label: String) -> some View {
@@ -641,6 +711,11 @@ struct PoseRowView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func syncNameInput() {
+        nameInputText = poseEntry.displayName(for: pose)
+        sanskritInputText = poseEntry.displaySanskrit(for: pose)
     }
 
     private func syncDurationInput() {

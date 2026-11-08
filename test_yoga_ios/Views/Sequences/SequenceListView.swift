@@ -69,6 +69,8 @@ struct SequenceListView: View {
                                             .foregroundStyle(.secondary)
                                     }
                                     .padding(.vertical, 4)
+                                    // Plain buttons only respond to taps on drawn content, so make the gap left by the Spacer tappable too
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -90,6 +92,7 @@ struct SequenceListView: View {
                                             sequenceToEdit = sequence
                                         } label: {
                                             SequenceCardView(sequence: sequence)
+                                                .contentShape(Rectangle())
                                         }
                                         .buttonStyle(.plain)
                                         .padding(.leading, 20)

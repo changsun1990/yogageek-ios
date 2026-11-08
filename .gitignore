@@ -13,6 +13,7 @@ serviceAccountKey.json
 
 # Python
 .venv/
+__pycache__/
 
 # Pronunciation clips (stored in Firebase Storage)
 pronunciation_samples/

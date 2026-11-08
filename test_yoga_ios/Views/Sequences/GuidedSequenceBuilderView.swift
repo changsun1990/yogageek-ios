@@ -107,7 +107,7 @@ struct GuidedSequenceBuilderView: View {
             .sheet(isPresented: $showingPosePicker) {
                 PosePickerView(
                     poses: poses,
-                    onSelect: { pose in
+                    onSelect: { pose, _, _ in
                         addPoseWithAutoPlacement(pose)
                     },
                     allowMultiSelect: true,
@@ -119,7 +119,7 @@ struct GuidedSequenceBuilderView: View {
                 )
             }
             .sheet(item: $selectedPoseForDetail) { pose in
-                PoseDetailSheet(pose: pose) {
+                PoseDetailSheet(pose: pose) { _, _ in
                     addPoseWithAutoPlacement(pose)
                     selectedPoseForDetail = nil
                 }

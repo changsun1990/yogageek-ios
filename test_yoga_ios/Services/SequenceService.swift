@@ -235,6 +235,7 @@ class SequenceService {
                     notes: poseData["notes"] as? String ?? "",
                     duration: poseData["duration"] as? Int,
                     customName: poseData["customName"] as? String,
+                    customSanskrit: poseData["customSanskrit"] as? String,
                     breath: poseData["breath"] as? String ?? ""
                 )
             }
@@ -350,6 +351,9 @@ class SequenceService {
                 if let customName = pose.customName {
                     poseData["customName"] = customName
                 }
+                if let customSanskrit = pose.customSanskrit {
+                    poseData["customSanskrit"] = customSanskrit
+                }
                 return poseData
             }
             var sectionData: [String: Any] = [
@@ -395,6 +399,7 @@ class SequenceService {
                     notes: poseData["notes"] as? String ?? "",
                     duration: poseData["duration"] as? Int,
                     customName: poseData["customName"] as? String,
+                    customSanskrit: poseData["customSanskrit"] as? String,
                     breath: poseData["breath"] as? String ?? ""
                 )
             }
